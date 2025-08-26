@@ -1,0 +1,157 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MESS-MATE</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+  <header class="navbar">
+    <div class="logo"><i class="fas fa-utensils"></i> MESS-MATE</div>
+    <nav>
+      <a href="#members"><i class="fas fa-users"></i> Members</a>
+      <a href="#tasks"><i class="fas fa-tasks"></i> Tasks</a>
+      <a href="#meals"><i class="fas fa-hamburger"></i> Meals</a>
+      <a href="#debts"><i class="fas fa-money-bill-wave"></i> Debts</a>
+      <a href="#notice"><i class="fas fa-bullhorn"></i> Notice Board</a>
+    </nav>
+  </header>
+
+  <div class="hero-section">
+    <div class="hero-content">
+      <h1>Welcome to MESS-MATE</h1>
+      <p>The ultimate solution for managing your mess or hostel living experience</p>
+      <button class="cta-button" id="get-started-btn">Get Started</button>
+    </div>
+  </div>
+
+  <div class="features-section">
+    <h2 class="section-title">Why Choose MESS-MATE?</h2>
+    <div class="features-container">
+      <div class="feature-card">
+        <i class="fas fa-calendar-alt feature-icon"></i>
+        <h3>Meal Planning</h3>
+        <p>Plan your meals within budget and track expenses efficiently</p>
+      </div>
+      <div class="feature-card">
+        <i class="fas fa-clipboard-list feature-icon"></i>
+        <h3>Task Management</h3>
+        <p>Assign and track cleaning and maintenance tasks fairly</p>
+      </div>
+      <div class="feature-card">
+        <i class="fas fa-calculator feature-icon"></i>
+        <h3>Expense Tracking</h3>
+        <p>Keep track of shared expenses and settle debts easily</p>
+      </div>
+    </div>
+  </div>
+
+  <main class="dashboard-section" id="dashboard">
+    <h2 class="section-title">Manage Your Mess</h2>
+    <div class="dashboard-intro">
+      <p>Welcome to your MESS-MATE dashboard! Here you can access all the tools you need to manage your mess efficiently.</p>
+    </div>
+    <section id="members" class="card">
+      <div class="card-icon"><i class="fas fa-users"></i></div>
+      <h2>Manage Members</h2>
+      <p>Add, remove, and manage all members of your mess</p>
+      <button onclick="window.location.href='members.html'">Add Member</button>
+    </section>
+    <section id="tasks" class="card">
+      <div class="card-icon"><i class="fas fa-tasks"></i></div>
+      <h2>Task Scheduler</h2>
+      <p>Create and assign cleaning and maintenance tasks</p>
+      <button onclick="window.location.href='tasks.html'">Assign Tasks</button>
+    </section>
+    <section id="meals" class="card">
+      <div class="card-icon"><i class="fas fa-hamburger"></i></div>
+      <h2>Meal Planner</h2>
+      <p>Plan meals, track expenses, and stay within budget</p>
+      <button onclick="window.location.href='meals.html'">Plan Meals</button>
+    </section>
+    <section id="debts" class="card">
+      <div class="card-icon"><i class="fas fa-money-bill-wave"></i></div>
+      <h2>Debt Tracker</h2>
+      <p>Keep track of who owes what to whom</p>
+      <form id="debt-form">
+        <input type="text" placeholder="Name" required>
+        <input type="number" placeholder="Amount" required>
+        <button type="submit">Add Debt</button>
+      </form>
+      <table id="debt-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+    <section id="notice" class="card">
+      <div class="card-icon"><i class="fas fa-bullhorn"></i></div>
+      <h2>Notice Board</h2>
+      <p>Share important announcements with all members</p>
+      <textarea placeholder="Post an update..."></textarea>
+      <button>Post</button>
+    </section>
+  </main>
+  
+  <div class="testimonials-section">
+    <h2 class="section-title">What Our Users Say</h2>
+    <div class="testimonials-container">
+      <div class="testimonial-card">
+        <div class="testimonial-avatar">
+          <i class="fas fa-user-circle"></i>
+        </div>
+        <p class="testimonial-text">"MESS-MATE has completely transformed how we manage our student mess. No more arguments about who owes what!"</p>
+        <p class="testimonial-author">- Rahul, DU Student</p>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-avatar">
+          <i class="fas fa-user-circle"></i>
+        </div>
+        <p class="testimonial-text">"The meal planning feature helps us stay within our budget while eating healthy and delicious meals."</p>
+        <p class="testimonial-author">- Priya, BUET Student</p>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-avatar">
+          <i class="fas fa-user-circle"></i>
+        </div>
+        <p class="testimonial-text">"Task scheduling has made our mess cleaner and more organized. Everyone does their fair share now!"</p>
+        <p class="testimonial-author">- Karim, NSU Student</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-content">
+      <div class="footer-section">
+        <h3><i class="fas fa-utensils"></i> MESS-MATE</h3>
+        <p>Making mess management simple and efficient for Bangladeshi students.</p>
+      </div>
+      <div class="footer-section">
+        <h3>Quick Links</h3>
+        <a href="#members">Members</a>
+        <a href="#tasks">Tasks</a>
+        <a href="#meals">Meals</a>
+        <a href="#debts">Debts</a>
+      </div>
+      <div class="footer-section">
+        <h3>Contact Us</h3>
+        <p><i class="fas fa-envelope"></i> support@messmate.com</p>
+        <p><i class="fas fa-phone"></i> +880 1234-567890</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2025 MESS-MATE | All Rights Reserved</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

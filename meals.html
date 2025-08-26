@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Budget Meal Planner for Bangladeshi Students - MESS-MATE Premium</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #1a2a3a 0%, #2c3e50 100%);
+      color: #f5f5f5;
+      min-height: 100vh;
+    }
+    .navbar {
+      background-color: rgba(0,0,0,0.2);
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    .logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #ff8a00;
+    }
+    nav a {
+      color: white;
+      text-decoration: none;
+      margin-left: 1.5rem;
+      font-weight: 600;
+      transition: color 0.3s;
+    }
+    nav a:hover {
+      color: #ff8a00;
+    }
+    .meal-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    .meal-form {
+      margin-bottom: 2rem;
+    }
+    .meal-list {
+      margin-top: 2rem;
+    }
+    .meal-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+    }
+    .meal-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .back-button {
+      margin-bottom: 1rem;
+      background: rgba(255,255,255,0.2);
+    }
+    .meal-day {
+      font-weight: bold;
+      color: #ff8a00;
+      margin-bottom: 0.5rem;
+    }
+    .meal-type {
+      display: inline-block;
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      background: rgba(229, 46, 113, 0.2);
+      margin-right: 0.5rem;
+      font-size: 0.8rem;
+    }
+    .meal-calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+    }
+    .calendar-day {
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 0.5rem;
+      text-align: center;
+    }
+    .calendar-day h3 {
+      margin-top: 0;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+    .calendar-meals {
+      font-size: 0.8rem;
+      text-align: left;
+    }
+    .calendar-meals p {
+      margin: 0.3rem 0;
+    }
+    .budget-section {
+      margin-bottom: 2rem;
+      padding: 1rem;
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+    }
+    .budget-controls {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .budget-controls input {
+      flex: 1;
+    }
+    .budget-meter {
+      height: 10px;
+      width: 100%;
+      background: rgba(255,255,255,0.2);
+      border-radius: 5px;
+      margin-top: 0.5rem;
+      overflow: hidden;
+    }
+    .budget-progress {
+      height: 100%;
+      background: linear-gradient(90deg, #4CAF50, #8BC34A);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .over-budget .budget-progress {
+      background: linear-gradient(90deg, #FF5252, #FF8A80);
+    }
+    .meal-cost {
+      font-size: 0.8rem;
+      color: #8BC34A;
+      margin-left: 0.5rem;
+    }
+    .meal-suggestion {
+      background: rgba(139, 195, 74, 0.1);
+      border-left: 3px solid #8BC34A;
+      padding: 0.5rem;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+    .card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .card h2 {
+      margin-top: 0;
+      color: #ff8a00;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+      padding-bottom: 0.5rem;
+    }
+    footer {
+      text-align: center;
+      padding: 1rem;
+      background: rgba(0,0,0,0.2);
+      margin-top: 2rem;
+    }
+    button {
+      background: linear-gradient(90deg, #ff8a00, #e52e71);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 0.2s;
+    }
+    button:hover {
+      transform: translateY(-2px);
+    }
+    input, textarea, select {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      padding: 0.5rem;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+    }
+    input::placeholder, textarea::placeholder {
+      color: rgba(255,255,255,0.5);
+    }
+    /* Budget styles */
+    .budget-section {
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      border-left: 4px solid #ff8a00;
+    }
+    .budget-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .budget-display {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+    .budget-meter {
+      height: 20px;
+      background-color: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .budget-progress {
+      height: 100%;
+      background: linear-gradient(90deg, #4caf50, #8bc34a);
+      width: 65%; /* Will be set dynamically with JS */
+      transition: width 0.3s ease;
+    }
+    .budget-warning {
+      background: linear-gradient(90deg, #ff9800, #f44336);
+    }
+    .meal-cost {
+      font-size: 0.8rem;
+      background-color: rgba(255,255,255,0.1);
+      padding: 2px 5px;
+      border-radius: 3px;
+      margin-left: 5px;
+    }
+    .meal-suggestion {
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+      border-left: 4px solid #ff8a00;
+    }
+    .meal-suggestion h3 {
+      margin-top: 0;
+      color: #ff8a00;
+      font-size: 1rem;
+    }
+    .meal-suggestion ul {
+      padding-left: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .meal-suggestion li {
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+    }
+    .meal-suggestion li:hover {
+      color: #ff8a00;
+      text-decoration: underline;
+    }
+    .affordable-meal {
+      color: #4caf50 !important;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .affordable-meal:hover {
+      text-decoration: underline;
+      transform: scale(1.05);
+    }
+    .expensive-meal {
+      color: rgba(255,255,255,0.5) !important;
+    }
+    .budget-planner {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .plan-button {
+      background: linear-gradient(90deg, #4caf50, #8bc34a);
+      width: 100%;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .plan-results {
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    .plan-results h3 {
+      margin-top: 0;
+      color: #ff8a00;
+      font-size: 1.1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 0.5rem;
+    }
+    .day-plan {
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px dashed rgba(255,255,255,0.1);
+    }
+    .day-plan h4 {
+      margin: 0.5rem 0;
+      color: #fff;
+    }
+    .day-plan-meals {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.5rem;
+    }
+    .day-meal {
+      background: rgba(255,255,255,0.05);
+      padding: 0.5rem;
+      border-radius: 4px;
+    }
+    .plan-summary {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: rgba(76, 175, 80, 0.1);
+      border-left: 4px solid #4caf50;
+      border-radius: 0 8px 8px 0;
+    }
+    .plan-summary h4 {
+      margin-top: 0;
+      color: #ff8a00;
+    }
+    .plan-summary p {
+      margin: 0.5rem 0;
+    }
+    .budget-tip {
+      font-style: italic;
+      color: rgba(255,255,255,0.7);
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      padding: 0.5rem;
+      background: rgba(255,255,255,0.05);
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <div class="logo">MESS-MATE</div>
+    <nav>
+      <a href="index.html#members">Members</a>
+      <a href="index.html#tasks">Tasks</a>
+      <a href="index.html#meals">Meals</a>
+      <a href="index.html#debts">Debts</a>
+      <a href="index.html#notice">Notice Board</a>
+    </nav>
+  </header>
+
+  <div class="meal-container">
+    <button class="back-button" onclick="window.location.href='index.html'">← Back to Dashboard</button>
+    
+    <h1>Budget Meal Planner for Bangladeshi Students</h1>
+    
+    <div class="budget-section">
+      <h2>Monthly Meal Budget</h2>
+      <div class="budget-controls">
+        <input type="number" id="budget-amount" placeholder="Set monthly budget (৳)" value="5000">
+        <button id="set-budget">Set Budget</button>
+      </div>
+      <div class="budget-display">
+        <span>Budget: <strong id="display-budget">৳5,000</strong></span>
+        <span>Spent: <strong id="display-spent">৳0</strong></span>
+        <span>Remaining: <strong id="display-remaining">৳5,000</strong></span>
+      </div>
+      <div class="budget-meter">
+        <div class="budget-progress" id="budget-progress-bar"></div>
+      </div>
+      <div class="budget-tip">
+        <strong>Tip for Bangladeshi Students:</strong> A typical student meal budget ranges from ৳4,000-6,000 per month. Cook in groups to save money and share ingredients for traditional dishes like dal, bhaji, and khichuri.
+      </div>
+      <div class="budget-planner">
+        <button id="plan-remaining-days" class="plan-button">Plan Meals for Remaining Days</button>
+        <div id="plan-results" class="plan-results" style="display: none;">
+          <h3>Suggested Meal Plan</h3>
+          <div id="plan-content"></div>
+        </div>
+      </div>
+    </div>
+      <div class="meal-form-container">
+        <h2>Add New Meal</h2>
+      <form id="meal-form">
+        <input type="text" id="meal-name" placeholder="Meal Name" required>
+        <select id="meal-type" required>
+          <option value="" disabled selected>Select Meal Type</option>
+          <option value="Breakfast">Breakfast</option>
+          <option value="Lunch">Lunch</option>
+          <option value="Dinner">Dinner</option>
+          <option value="Snack">Snack</option>
+        </select>
+        <input type="date" id="meal-date" required>
+        <input type="number" id="meal-cost" placeholder="Cost (৳)" required>
+        <textarea id="meal-ingredients" placeholder="Ingredients (one per line)" rows="3"></textarea>
+        <button type="submit">Add Meal</button>
+      </form>
+      </div>
+      <div class="meal-suggestion">
+        <p><strong>Tip:</strong> For Bangladeshi students on a budget, consider cooking meals in batches and using local seasonal vegetables like lal shak, pui shak, and korola which are nutritious and affordable.</p>
+      </div>
+    </div>
+    
+    <div class="card meal-form">
+      <h2>Add New Meal</h2>
+      <form id="meal-form">
+        <input type="text" id="meal-name" placeholder="Meal Name" required>
+        <select id="meal-type" required>
+          <option value="" disabled selected>Select Meal Type</option>
+          <option value="Breakfast">Breakfast</option>
+          <option value="Lunch">Lunch</option>
+          <option value="Dinner">Dinner</option>
+          <option value="Snack">Snack</option>
+        </select>
+        <input type="date" id="meal-date" required>
+        <input type="number" id="meal-cost" placeholder="Cost (৳)" required>
+        <textarea id="meal-ingredients" placeholder="Ingredients (one per line)" rows="3"></textarea>
+        <button type="submit">Add Meal</button>
+      </form>
+      <div class="meal-suggestion">
+        <h3>Budget-Friendly Bangladeshi Meal Ideas:</h3>
+        <ul>
+          <li><strong>Breakfast:</strong> Ruti & Dal (৳30-40), Khichuri (৳40-50), Parata & Dim (৳50-60)</li>
+          <li><strong>Lunch:</strong> Bhat & Dal & Bhaji (৳60-80), Khichuri & Dim (৳70-90), Bhat & Mach Bhaja (৳100-120)</li>
+          <li><strong>Dinner:</strong> Bhat & Dal & Aloor Bhorta (৳60-70), Porota & Torkari (৳70-90), Bhat & Murgi (৳120-150)</li>
+          <li><strong>Snack:</strong> Muri & Cha (৳15-20), Shingara (৳10-15), Peyaju (৳10-15)</li>
+        </ul>
+        <p><em>Click on a suggestion to auto-fill the form</em></p>
+      </div>
+    </div>
+    
+    <div class="card meal-calendar">
+      <div class="calendar-day">
+        <h3>Monday</h3>
+        <div class="calendar-meals">
+          <p><strong>B:</strong> Ruti & Dal <span class="meal-cost">৳35</span></p>
+          <p><strong>L:</strong> Bhat & Dal & Bhaji <span class="meal-cost">৳70</span></p>
+          <p><strong>D:</strong> Bhat & Dal & Aloor Bhorta <span class="meal-cost">৳65</span></p>
+        </div>
+      </div>
+      <div class="calendar-day">
+        <h3>Tuesday</h3>
+        <div class="calendar-meals">
+          <p><strong>B:</strong> Parata & Dim <span class="meal-cost">৳55</span></p>
+          <p><strong>L:</strong> Khichuri & Dim <span class="meal-cost">৳85</span></p>
+          <p><strong>D:</strong> Porota & Torkari <span class="meal-cost">৳80</span></p>
+        </div>
+      </div>
+      <div class="calendar-day">
+        <h3>Wednesday</h3>
+        <div class="calendar-meals">
+          <p><strong>B:</strong> Khichuri <span class="meal-cost">৳45</span></p>
+          <p><strong>L:</strong> Bhat & Mach Bhaja <span class="meal-cost">৳110</span></p>
+          <p><strong>D:</strong> Bhat & Dal <span class="meal-cost">৳60</span></p>
+        </div>
+      </div>
+      <div class="calendar-day">
+        <h3>Thursday</h3>
+        <div class="calendar-meals">
+          <p><strong>B:</strong> Ruti & Bhaji <span class="meal-cost">৳40</span></p>
+          <p><strong>L:</strong> Bhat & Shobji <span class="meal-cost">৳75</span></p>
+          <p><strong>D:</strong> Bhat & Murgi <span class="meal-cost">৳130</span></p>
+        </div>
+      </div>
+      <div class="calendar-day">
+        <h3>Friday</h3>
+        <div class="calendar-meals">
+          <p><strong>B:</strong> Parata & Dim <span class="meal-cost">৳55</span></p>
+          <p><strong>L:</strong> Bhat & Dal & Begun Bhaja <span class="meal-cost">৳75</span></p>
+          <p><strong>D:</strong> Khichuri <span class="meal-cost">৳45</span></p>
+        </div>
+      </div>
+      <div class="calendar-day">
+        <h3>Saturday</h3>
+        <div class="calendar-meals">
+          <p><strong>B:</strong> Ruti & Dal <span class="meal-cost">৳35</span></p>
+          <p><strong>L:</strong> Bhat & Mach Bhaja <span class="meal-cost">৳110</span></p>
+          <p><strong>D:</strong> Porota & Dim <span class="meal-cost">৳60</span></p>
+        </div>
+      </div>
+      <div class="calendar-day">
+        <h3>Sunday</h3>
+        <div class="calendar-meals">
+          <p><strong>B:</strong> Khichuri <span class="meal-cost">৳45</span></p>
+          <p><strong>L:</strong> Bhat & Murgi <span class="meal-cost">৳130</span></p>
+          <p><strong>D:</strong> Bhat & Dal & Bhaji <span class="meal-cost">৳70</span></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card meal-list">
+      <h2>Upcoming Meals</h2>
+      <div id="meals-container">
+        <!-- Meals will be added here dynamically -->
+        <div class="meal-item">
+          <div>
+            <div class="meal-day">Today</div>
+            <h3>Spaghetti Bolognese</h3>
+            <span class="meal-type">Dinner</span>
+            <p>Ingredients: Pasta, Ground Beef, Tomato Sauce, Onions, Garlic</p>
+          </div>
+          <div class="meal-actions">
+            <button class="edit-btn">Edit</button>
+            <button class="delete-btn">Delete</button>
+          </div>
+        </div>
+        <div class="meal-item">
+          <div>
+            <div class="meal-day">Tomorrow</div>
+            <h3>Avocado Toast</h3>
+            <span class="meal-type">Breakfast</span>
+            <p>Ingredients: Bread, Avocado, Eggs, Salt, Pepper</p>
+          </div>
+          <div class="meal-actions">
+            <button class="edit-btn">Edit</button>
+            <button class="delete-btn">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 MESS-MATE Premium</p>
+  </footer>
+
+  <script>
+    // Budget tracking variables
+    let budget = 5000;
+    let spent = 0; // Initialize to 0 instead of hardcoded value
+    let remaining = budget - spent;
+    
+    // Load budget data from localStorage if available
+    function loadBudgetData() {
+      const savedBudget = localStorage.getItem('mealPlannerBudget');
+      const savedSpent = localStorage.getItem('mealPlannerSpent');
+      
+      if (savedBudget !== null) {
+        budget = parseInt(savedBudget);
+      }
+      
+      if (savedSpent !== null) {
+        spent = parseInt(savedSpent);
+      }
+      
+      remaining = budget - spent;
+    }
+    
+    // Save budget data to localStorage
+    function saveBudgetData() {
+      localStorage.setItem('mealPlannerBudget', budget);
+      localStorage.setItem('mealPlannerSpent', spent);
+    }
+    
+    // Load saved data on page load
+    loadBudgetData();
+    
+    // Calculate days remaining in the month
+    function getDaysRemainingInMonth() {
+      const today = new Date();
+      const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      return lastDayOfMonth.getDate() - today.getDate() + 1; // +1 to include today
+    }
+    
+    // Calculate daily budget
+    function calculateDailyBudget(remainingBudget, daysRemaining) {
+      // If parameters are not provided, use the global variables
+      if (remainingBudget === undefined) remainingBudget = remaining;
+      if (daysRemaining === undefined) daysRemaining = getDaysRemainingInMonth();
+      
+      return daysRemaining > 0 ? Math.floor(remainingBudget / daysRemaining) : 0;
+    }
+    
+    // Initialize budget display
+    updateBudgetDisplay();
+    
+    // Set budget button event listener
+    document.getElementById('set-budget').addEventListener('click', function() {
+      const newBudget = parseInt(document.getElementById('budget-amount').value);
+      if (newBudget && newBudget > 0) {
+        budget = newBudget;
+        remaining = budget - spent;
+        updateBudgetDisplay();
+      }
+    });
+    
+    // Update budget display and progress bar
+    function updateBudgetDisplay() {
+      const daysRemaining = getDaysRemainingInMonth();
+      const dailyBudget = calculateDailyBudget();
+      
+      document.getElementById('display-budget').textContent = '৳' + budget.toLocaleString();
+      document.getElementById('display-spent').textContent = '৳' + spent.toLocaleString();
+      document.getElementById('display-remaining').textContent = '৳' + remaining.toLocaleString();
+      
+      // Add daily budget and days remaining information
+      const budgetTip = document.querySelector('.budget-tip');
+      budgetTip.innerHTML = `
+        <strong>Budget Summary:</strong> You have <strong>${daysRemaining} days</strong> left this month with 
+        <strong>৳${dailyBudget}</strong> to spend per day.<br>
+        <strong>Tip for Bangladeshi Students:</strong> A typical student meal budget ranges from ৳4,000-6,000 per month. 
+        Cook in groups to save money and share ingredients for traditional dishes like dal, bhaji, and khichuri.
+      `;
+      
+      // Update progress bar
+      const progressBar = document.getElementById('budget-progress-bar');
+      const percentage = (spent / budget) * 100;
+      progressBar.style.width = percentage + '%';
+      
+      // Add warning class if over 80% of budget
+      if (percentage > 80) {
+        progressBar.classList.add('budget-warning');
+      } else {
+        progressBar.classList.remove('budget-warning');
+      }
+      
+      // Save budget data to localStorage
+      saveBudgetData();
+      
+      // Update meal suggestions based on daily budget
+      updateMealSuggestions(dailyBudget);
+    }
+    
+    // Format date to display as Today, Tomorrow, or the actual date
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      if (date.toDateString() === today.toDateString()) {
+        return 'Today';
+      } else if (date.toDateString() === tomorrow.toDateString()) {
+        return 'Tomorrow';
+      } else {
+        return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+      }
+    }
+    
+    document.getElementById('meal-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const mealName = document.getElementById('meal-name').value;
+      const mealType = document.getElementById('meal-type').value;
+      const mealDate = document.getElementById('meal-date').value;
+      const mealIngredients = document.getElementById('meal-ingredients').value;
+      const mealCost = parseInt(document.getElementById('meal-cost').value) || 0;
+      
+      // Update budget tracking
+      spent += mealCost;
+      remaining = budget - spent;
+      updateBudgetDisplay(); // This now includes saving to localStorage
+      
+      const formattedDate = formatDate(mealDate);
+      const ingredientsList = mealIngredients ? `Ingredients: ${mealIngredients.replace(/\n/g, ', ')}` : '';
+      
+      const mealItem = document.createElement('div');
+      mealItem.className = 'meal-item';
+      
+      mealItem.innerHTML = `
+        <div>
+          <div class="meal-day">${formattedDate}</div>
+          <h3>${mealName} <span class="meal-cost">৳${mealCost}</span></h3>
+          <span class="meal-type">${mealType}</span>
+          ${ingredientsList ? `<p>${ingredientsList}</p>` : ''}
+        </div>
+        <div class="meal-actions">
+          <button class="edit-btn">Edit</button>
+          <button class="delete-btn">Delete</button>
+        </div>
+      `;
+      
+      document.getElementById('meals-container').prepend(mealItem);
+      this.reset();
+      
+      // Add event listeners to new buttons
+      addMealButtonListeners(mealItem, mealCost);
+      
+      // Update calendar (simplified implementation)
+      updateCalendar(mealDate, mealType, mealName, mealCost);
+      
+      // Save meals to localStorage
+      saveMeals();
+    });
+    
+    // Add event listeners to meal buttons
+    function addMealButtonListeners(mealItem, mealCost) {
+      mealItem.querySelector('.edit-btn').addEventListener('click', function() {
+        alert('Edit functionality coming soon!');
+      });
+      
+      mealItem.querySelector('.delete-btn').addEventListener('click', function() {
+        if (confirm('Are you sure you want to delete this meal?')) {
+          // Subtract the cost when deleting
+          spent -= mealCost;
+          remaining = budget - spent;
+          updateBudgetDisplay(); // This now includes saving to localStorage
+          mealItem.remove();
+          
+          // Save meals to localStorage
+          saveMeals();
+        }
+      });
+    }
+    
+    // Simplified calendar update function
+    function updateCalendar(dateString, mealType, mealName, mealCost) {
+      const date = new Date(dateString);
+      const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const calendarIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Adjust for our calendar (Monday first)
+      
+      const calendarDay = document.querySelectorAll('.calendar-day')[calendarIndex];
+      if (calendarDay) {
+        const typeAbbr = mealType.charAt(0);
+        const mealEntry = document.createElement('p');
+        mealEntry.innerHTML = `<strong>${typeAbbr}:</strong> ${mealName} <span class="meal-cost">৳${mealCost}</span>`;
+        
+        // Replace existing meal of same type or add new
+        const meals = calendarDay.querySelectorAll('.calendar-meals p');
+        let replaced = false;
+        
+        meals.forEach(meal => {
+          if (meal.querySelector('strong').textContent === `${typeAbbr}:`) {
+            meal.innerHTML = `<strong>${typeAbbr}:</strong> ${mealName} <span class="meal-cost">৳${mealCost}</span>`;
+            replaced = true;
+          }
+        });
+        
+        if (!replaced) {
+          calendarDay.querySelector('.calendar-meals').appendChild(mealEntry);
+        }
+      }
+    }
+    
+    // Function to save meals to localStorage
+    function saveMeals() {
+      const mealItems = document.querySelectorAll('.meal-item');
+      const meals = [];
+      
+      mealItems.forEach(item => {
+        const mealName = item.querySelector('h3').textContent.split(' ৳')[0].trim();
+        const mealType = item.querySelector('.meal-type').textContent;
+        const mealDate = item.querySelector('.meal-day').textContent;
+        const mealCost = parseInt(item.querySelector('.meal-cost').textContent.replace('৳', '')) || 0;
+        
+        // Get ingredients if available
+        let ingredients = '';
+        const ingredientsP = item.querySelector('p');
+        if (ingredientsP && ingredientsP.textContent.includes('Ingredients:')) {
+          ingredients = ingredientsP.textContent.replace('Ingredients:', '').trim();
+        }
+        
+        meals.push({
+          name: mealName,
+          type: mealType,
+          date: mealDate,
+          cost: mealCost,
+          ingredients: ingredients
+        });
+      });
+      
+      localStorage.setItem('mealPlannerMeals', JSON.stringify(meals));
+    }
+    
+    // Function to load meals from localStorage
+    function loadMeals() {
+      const savedMeals = localStorage.getItem('mealPlannerMeals');
+      if (savedMeals) {
+        const meals = JSON.parse(savedMeals);
+        const mealsContainer = document.getElementById('meals-container');
+        
+        // Clear existing example meals
+        mealsContainer.innerHTML = '';
+        
+        meals.forEach(meal => {
+          const mealItem = document.createElement('div');
+          mealItem.className = 'meal-item';
+          
+          mealItem.innerHTML = `
+            <div>
+              <div class="meal-day">${meal.date}</div>
+              <h3>${meal.name} <span class="meal-cost">৳${meal.cost}</span></h3>
+              <span class="meal-type">${meal.type}</span>
+              ${meal.ingredients ? `<p>Ingredients: ${meal.ingredients}</p>` : ''}
+            </div>
+            <div class="meal-actions">
+              <button class="edit-btn">Edit</button>
+              <button class="delete-btn">Delete</button>
+            </div>
+          `;
+          
+          mealsContainer.appendChild(mealItem);
+          addMealButtonListeners(mealItem, meal.cost);
+        });
+      }
+    }
+    
+    // Add listeners to existing meal items
+    document.querySelectorAll('.meal-item').forEach(item => {
+      addMealButtonListeners(item, 0); // Existing items don't have cost tracking
+    });
+    
+    // Load saved meals on page load
+    loadMeals();
+    
+    // Function to update meal suggestions based on daily budget
+    function updateMealSuggestions(dailyBudget) {
+      // Define meal options with their cost ranges
+      const mealOptions = [
+        { type: 'Breakfast', name: 'Ruti & Dal', minCost: 30, maxCost: 40 },
+        { type: 'Breakfast', name: 'Khichuri', minCost: 40, maxCost: 50 },
+        { type: 'Breakfast', name: 'Parata & Dim', minCost: 50, maxCost: 60 },
+        { type: 'Lunch', name: 'Bhat & Dal & Bhaji', minCost: 60, maxCost: 80 },
+        { type: 'Lunch', name: 'Khichuri & Dim', minCost: 70, maxCost: 90 },
+        { type: 'Lunch', name: 'Bhat & Mach Bhaja', minCost: 100, maxCost: 120 },
+        { type: 'Dinner', name: 'Bhat & Dal & Aloor Bhorta', minCost: 60, maxCost: 70 },
+        { type: 'Dinner', name: 'Porota & Torkari', minCost: 70, maxCost: 90 },
+        { type: 'Dinner', name: 'Bhat & Murgi', minCost: 120, maxCost: 150 },
+        { type: 'Snack', name: 'Muri & Cha', minCost: 15, maxCost: 20 },
+        { type: 'Snack', name: 'Shingara', minCost: 10, maxCost: 15 },
+        { type: 'Snack', name: 'Peyaju', minCost: 10, maxCost: 15 }
+      ];
+      
+      // Get the suggestion container
+      const suggestionContainer = document.querySelector('.meal-suggestion');
+      
+      // Clear existing content
+      suggestionContainer.innerHTML = '<h3>Budget-Friendly Bangladeshi Meal Ideas:</h3>';
+      
+      // Create a message about daily budget
+      const budgetMessage = document.createElement('p');
+      budgetMessage.innerHTML = `<strong>Recommended meals within your daily budget of ৳${dailyBudget}:</strong>`;
+      suggestionContainer.appendChild(budgetMessage);
+      
+      // Group meals by type
+      const mealsByType = {
+        'Breakfast': [],
+        'Lunch': [],
+        'Dinner': [],
+        'Snack': []
+      };
+      
+      // Filter and organize meals
+      mealOptions.forEach(meal => {
+        const avgCost = Math.floor((meal.minCost + meal.maxCost) / 2);
+        const isWithinBudget = avgCost <= dailyBudget;
+        
+        mealsByType[meal.type].push({
+          ...meal,
+          avgCost,
+          isWithinBudget
+        });
+      });
+      
+      // Create the list
+      const ul = document.createElement('ul');
+      
+      // Add meals by type
+      Object.keys(mealsByType).forEach(type => {
+        const meals = mealsByType[type];
+        if (meals.length > 0) {
+          const typeItem = document.createElement('li');
+          typeItem.innerHTML = `<strong>${type}:</strong> `;
+          
+          const mealTexts = meals.map(meal => {
+            const costText = `৳${meal.minCost}-${meal.maxCost}`;
+            if (meal.isWithinBudget) {
+              return `<span class="affordable-meal" data-meal="${meal.name}" data-type="${meal.type}" data-cost="${meal.avgCost}">${meal.name} (${costText})</span>`;
+            } else {
+              return `<span class="expensive-meal">${meal.name} (${costText})</span>`;
+            }
+          });
+          
+          typeItem.innerHTML += mealTexts.join(', ');
+          ul.appendChild(typeItem);
+        }
+      });
+      
+      suggestionContainer.appendChild(ul);
+      
+      // Add note
+      const note = document.createElement('p');
+      note.innerHTML = '<em>Click on a highlighted meal to auto-fill the form. Green meals are within your daily budget.</em>';
+      suggestionContainer.appendChild(note);
+      
+      // Add click handlers to affordable meals
+      document.querySelectorAll('.affordable-meal').forEach(item => {
+        item.style.color = '#4caf50';
+        item.style.fontWeight = 'bold';
+        item.style.cursor = 'pointer';
+        
+        item.addEventListener('click', function() {
+          const mealName = this.getAttribute('data-meal');
+          const mealType = this.getAttribute('data-type');
+          const mealCost = this.getAttribute('data-cost');
+          
+          // Fill the form
+          document.getElementById('meal-name').value = mealName;
+          document.getElementById('meal-type').value = mealType;
+          document.getElementById('meal-cost').value = mealCost;
+          
+          // Set today's date
+          const today = new Date().toISOString().split('T')[0];
+          document.getElementById('meal-date').value = today;
+        });
+      });
+      
+      // Style expensive meals
+      document.querySelectorAll('.expensive-meal').forEach(item => {
+        item.style.color = '#999';
+      });
+    }
+    
+    // Initial call to update meal suggestions
+    updateMealSuggestions(calculateDailyBudget());
+    
+    // Legacy meal suggestion click handlers for backward compatibility
+    document.querySelectorAll('.meal-suggestion li').forEach(item => {
+      item.addEventListener('click', function() {
+        const text = this.textContent;
+        let mealName, mealType, mealCost;
+        
+        // Extract meal type
+        if (text.includes('Breakfast:')) {
+          mealType = 'Breakfast';
+        } else if (text.includes('Lunch:')) {
+          mealType = 'Lunch';
+        } else if (text.includes('Dinner:')) {
+          mealType = 'Dinner';
+        } else if (text.includes('Snack:')) {
+          mealType = 'Snack';
+        }
+        
+        // Extract meal name and cost
+        const match = text.match(/([^:]+)\s\(৳(\d+)-(\d+)\)/);
+        if (match) {
+          mealName = match[1].trim();
+          // Use the average of the cost range
+          const minCost = parseInt(match[2]);
+          const maxCost = parseInt(match[3]);
+          mealCost = Math.floor((minCost + maxCost) / 2);
+        }
+        
+        // Fill the form
+        if (mealName && mealType && mealCost) {
+          document.getElementById('meal-name').value = mealName;
+          document.getElementById('meal-type').value = mealType;
+          document.getElementById('meal-cost').value = mealCost;
+          // Set today's date
+          const today = new Date().toISOString().split('T')[0];
+          document.getElementById('meal-date').value = today;
+        }
+      });
+    });
+    
+    // Add custom styling for select element
+    document.getElementById('meal-type').style.width = '100%';
+    document.getElementById('meal-type').style.padding = '0.5rem';
+    document.getElementById('meal-type').style.borderRadius = '8px';
+    document.getElementById('meal-type').style.border = 'none';
+    document.getElementById('meal-type').style.marginBottom = '1rem';
+    
+    // Plan meals for remaining days
+     document.getElementById('plan-remaining-days').addEventListener('click', function() {
+       const daysRemaining = getDaysRemainingInMonth();
+       const dailyBudget = calculateDailyBudget(remaining, daysRemaining);
+       const planResults = document.getElementById('plan-results');
+       const planContent = document.getElementById('plan-content');
+      
+      // Show the plan results section
+      planResults.style.display = 'block';
+      planContent.innerHTML = '';
+      
+      // Define meal options with their cost ranges
+      const mealOptions = {
+        breakfast: [
+          { name: 'Ruti & Dal', cost: 35 },
+          { name: 'Khichuri', cost: 45 },
+          { name: 'Parata & Dim', cost: 55 },
+          { name: 'Ruti & Bhaji', cost: 40 },
+          { name: 'Muri & Cha', cost: 20 }
+        ],
+        lunch: [
+          { name: 'Bhat & Dal & Bhaji', cost: 70 },
+          { name: 'Khichuri & Dim', cost: 85 },
+          { name: 'Bhat & Mach Bhaja', cost: 110 },
+          { name: 'Bhat & Shobji', cost: 75 },
+          { name: 'Bhat & Dal & Begun Bhaja', cost: 75 }
+        ],
+        dinner: [
+          { name: 'Bhat & Dal & Aloor Bhorta', cost: 65 },
+          { name: 'Porota & Torkari', cost: 80 },
+          { name: 'Bhat & Murgi', cost: 130 },
+          { name: 'Bhat & Dal', cost: 60 },
+          { name: 'Khichuri', cost: 45 },
+          { name: 'Porota & Dim', cost: 60 }
+        ],
+        snack: [
+          { name: 'Shingara', cost: 15 },
+          { name: 'Peyaju', cost: 15 },
+          { name: 'Cha', cost: 10 },
+          { name: 'Jhalmuri', cost: 20 }
+        ]
+      };
+      
+      // Filter affordable meals for each meal type
+      const affordableBreakfasts = mealOptions.breakfast.filter(meal => meal.cost <= dailyBudget / 3);
+      const affordableLunches = mealOptions.lunch.filter(meal => meal.cost <= dailyBudget / 3);
+      const affordableDinners = mealOptions.dinner.filter(meal => meal.cost <= dailyBudget / 3);
+      const affordableSnacks = mealOptions.snack.filter(meal => meal.cost <= dailyBudget / 6); // Snacks are cheaper
+      
+      // Generate a meal plan for each remaining day
+      const today = new Date();
+      let currentDate = new Date(today);
+      let totalPlanCost = 0;
+      
+      for (let i = 0; i < daysRemaining; i++) {
+        // Format the date
+        const dateStr = currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+        
+        // Randomly select meals for the day
+        const breakfast = affordableBreakfasts[Math.floor(Math.random() * affordableBreakfasts.length)] || { name: 'Skip breakfast', cost: 0 };
+        const lunch = affordableLunches[Math.floor(Math.random() * affordableLunches.length)] || { name: 'Simple lunch', cost: Math.floor(dailyBudget / 3) };
+        const dinner = affordableDinners[Math.floor(Math.random() * affordableDinners.length)] || { name: 'Simple dinner', cost: Math.floor(dailyBudget / 3) };
+        const snack = affordableSnacks[Math.floor(Math.random() * affordableSnacks.length)] || { name: 'No snack', cost: 0 };
+        
+        // Calculate daily cost
+        const dailyCost = breakfast.cost + lunch.cost + dinner.cost + snack.cost;
+        totalPlanCost += dailyCost;
+        
+        // Create day plan element
+        const dayPlan = document.createElement('div');
+        dayPlan.className = 'day-plan';
+        dayPlan.innerHTML = `
+          <h4>${dateStr} - Total: ৳${dailyCost}</h4>
+          <div class="day-plan-meals">
+            <div class="day-meal">
+              <strong>Breakfast:</strong> ${breakfast.name} (৳${breakfast.cost})
+            </div>
+            <div class="day-meal">
+              <strong>Lunch:</strong> ${lunch.name} (৳${lunch.cost})
+            </div>
+            <div class="day-meal">
+              <strong>Dinner:</strong> ${dinner.name} (৳${dinner.cost})
+            </div>
+            <div class="day-meal">
+              <strong>Snack:</strong> ${snack.name} (৳${snack.cost})
+            </div>
+          </div>
+        `;
+        
+        // Add day plan to content
+        planContent.appendChild(dayPlan);
+        
+        // Move to next day
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      // Add summary
+      const summary = document.createElement('div');
+      summary.className = 'plan-summary';
+      summary.innerHTML = `
+        <h4>Plan Summary</h4>
+        <p>Total Cost: ৳${totalPlanCost.toLocaleString()} of ৳${remaining.toLocaleString()} remaining budget</p>
+        <p>Average Daily Cost: ৳${Math.floor(totalPlanCost / daysRemaining).toLocaleString()}</p>
+        <p>Savings: ৳${(remaining - totalPlanCost).toLocaleString()}</p>
+      `;
+      
+      planContent.appendChild(summary);
+      
+      // Scroll to plan results
+      planResults.scrollIntoView({ behavior: 'smooth' });
+    });
+  </script>
+</body>
+</html>

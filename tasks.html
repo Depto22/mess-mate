@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Scheduler - MESS-MATE Premium</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    .task-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    .task-form {
+      margin-bottom: 2rem;
+    }
+    .task-list {
+      margin-top: 2rem;
+    }
+    .task-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+    }
+    .task-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .back-button {
+      margin-bottom: 1rem;
+      background: rgba(255,255,255,0.2);
+    }
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <div class="logo">MESS-MATE</div>
+    <nav>
+      <a href="index.html#members">Members</a>
+      <a href="index.html#tasks">Tasks</a>
+      <a href="index.html#meals">Meals</a>
+      <a href="index.html#debts">Debts</a>
+      <a href="index.html#notice">Notice Board</a>
+    </nav>
+  </header>
+
+  <div class="task-container">
+    <button class="back-button" onclick="window.location.href='index.html'">← Back to Dashboard</button>
+    
+    <h1>Task Scheduler</h1>
+    
+    <div class="card task-form">
+      <h2>Add New Task</h2>
+      <form id="task-form">
+        <input type="text" id="task-name" placeholder="Task Name" required>
+        <input type="text" id="assigned-to" placeholder="Assigned To" required>
+        <input type="date" id="due-date" required>
+        <textarea id="task-description" placeholder="Task Description" rows="3"></textarea>
+        <button type="submit">Add Task</button>
+      </form>
+    </div>
+    
+    <div class="card task-list">
+      <h2>Current Tasks</h2>
+      <div id="tasks-container">
+        <!-- Tasks will be added here dynamically -->
+        <div class="task-item">
+          <div>
+            <h3>Clean Kitchen</h3>
+            <p>Assigned to: John</p>
+            <p>Due: 2025-01-15</p>
+          </div>
+          <div class="task-actions">
+            <button class="complete-btn">Complete</button>
+            <button class="delete-btn">Delete</button>
+          </div>
+        </div>
+        <div class="task-item">
+          <div>
+            <h3>Take Out Trash</h3>
+            <p>Assigned to: Sarah</p>
+            <p>Due: 2025-01-12</p>
+          </div>
+          <div class="task-actions">
+            <button class="complete-btn">Complete</button>
+            <button class="delete-btn">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 MESS-MATE Premium</p>
+  </footer>
+
+  <script>
+    document.getElementById('task-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const taskName = document.getElementById('task-name').value;
+      const assignedTo = document.getElementById('assigned-to').value;
+      const dueDate = document.getElementById('due-date').value;
+      const description = document.getElementById('task-description').value;
+      
+      const taskItem = document.createElement('div');
+      taskItem.className = 'task-item';
+      
+      taskItem.innerHTML = `
+        <div>
+          <h3>${taskName}</h3>
+          <p>Assigned to: ${assignedTo}</p>
+          <p>Due: ${dueDate}</p>
+          ${description ? `<p>${description}</p>` : ''}
+        </div>
+        <div class="task-actions">
+          <button class="complete-btn">Complete</button>
+          <button class="delete-btn">Delete</button>
+        </div>
+      `;
+      
+      document.getElementById('tasks-container').prepend(taskItem);
+      this.reset();
+      
+      // Add event listeners to new buttons
+      addTaskButtonListeners(taskItem);
+    });
+    
+    // Add event listeners to existing task buttons
+    function addTaskButtonListeners(taskItem) {
+      taskItem.querySelector('.complete-btn').addEventListener('click', function() {
+        taskItem.style.opacity = '0.5';
+        this.textContent = 'Completed';
+        this.disabled = true;
+      });
+      
+      taskItem.querySelector('.delete-btn').addEventListener('click', function() {
+        taskItem.remove();
+      });
+    }
+    
+    // Add listeners to existing task items
+    document.querySelectorAll('.task-item').forEach(item => {
+      addTaskButtonListeners(item);
+    });
+  </script>
+</body>
+</html>

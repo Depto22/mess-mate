@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Members - MESS-MATE Premium</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    .member-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    .member-form {
+      margin-bottom: 2rem;
+    }
+    .member-list {
+      margin-top: 2rem;
+    }
+    .member-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+    }
+    .member-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .back-button {
+      margin-bottom: 1rem;
+      background: rgba(255,255,255,0.2);
+    }
+    .member-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #ff8a00, #e52e71);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 1rem;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+    .member-info {
+      display: flex;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <div class="logo">MESS-MATE</div>
+    <nav>
+      <a href="index.html#members">Members</a>
+      <a href="index.html#tasks">Tasks</a>
+      <a href="index.html#meals">Meals</a>
+      <a href="index.html#debts">Debts</a>
+      <a href="index.html#notice">Notice Board</a>
+    </nav>
+  </header>
+
+  <div class="member-container">
+    <button class="back-button" onclick="window.location.href='index.html'">← Back to Dashboard</button>
+    
+    <h1>Manage Members</h1>
+    
+    <div class="card member-form">
+      <h2>Add New Member</h2>
+      <form id="member-form">
+        <input type="text" id="member-name" placeholder="Full Name" required>
+        <input type="email" id="member-email" placeholder="Email Address" required>
+        <input type="tel" id="member-phone" placeholder="Phone Number">
+        <textarea id="member-notes" placeholder="Additional Notes" rows="2"></textarea>
+        <button type="submit">Add Member</button>
+      </form>
+    </div>
+    
+    <div class="card member-list">
+      <h2>Current Members</h2>
+      <div id="members-container">
+        <!-- Members will be added here dynamically -->
+        <div class="member-item">
+          <div class="member-info">
+            <div class="member-avatar">JD</div>
+            <div>
+              <h3>John Doe</h3>
+              <p>john.doe@example.com</p>
+              <p>+1 (555) 123-4567</p>
+            </div>
+          </div>
+          <div class="member-actions">
+            <button class="edit-btn">Edit</button>
+            <button class="remove-btn">Remove</button>
+          </div>
+        </div>
+        <div class="member-item">
+          <div class="member-info">
+            <div class="member-avatar">JS</div>
+            <div>
+              <h3>Jane Smith</h3>
+              <p>jane.smith@example.com</p>
+              <p>+1 (555) 987-6543</p>
+            </div>
+          </div>
+          <div class="member-actions">
+            <button class="edit-btn">Edit</button>
+            <button class="remove-btn">Remove</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 MESS-MATE Premium</p>
+  </footer>
+
+  <script>
+    document.getElementById('member-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const memberName = document.getElementById('member-name').value;
+      const memberEmail = document.getElementById('member-email').value;
+      const memberPhone = document.getElementById('member-phone').value;
+      const memberNotes = document.getElementById('member-notes').value;
+      
+      // Create initials for avatar
+      const nameParts = memberName.split(' ');
+      let initials = '';
+      if (nameParts.length >= 2) {
+        initials = nameParts[0].charAt(0) + nameParts[1].charAt(0);
+      } else {
+        initials = nameParts[0].charAt(0);
+      }
+      
+      const memberItem = document.createElement('div');
+      memberItem.className = 'member-item';
+      
+      memberItem.innerHTML = `
+        <div class="member-info">
+          <div class="member-avatar">${initials.toUpperCase()}</div>
+          <div>
+            <h3>${memberName}</h3>
+            <p>${memberEmail}</p>
+            ${memberPhone ? `<p>${memberPhone}</p>` : ''}
+            ${memberNotes ? `<p>${memberNotes}</p>` : ''}
+          </div>
+        </div>
+        <div class="member-actions">
+          <button class="edit-btn">Edit</button>
+          <button class="remove-btn">Remove</button>
+        </div>
+      `;
+      
+      document.getElementById('members-container').prepend(memberItem);
+      this.reset();
+      
+      // Add event listeners to new buttons
+      addMemberButtonListeners(memberItem);
+    });
+    
+    // Add event listeners to member buttons
+    function addMemberButtonListeners(memberItem) {
+      memberItem.querySelector('.edit-btn').addEventListener('click', function() {
+        alert('Edit functionality coming soon!');
+      });
+      
+      memberItem.querySelector('.remove-btn').addEventListener('click', function() {
+        if (confirm('Are you sure you want to remove this member?')) {
+          memberItem.remove();
+        }
+      });
+    }
+    
+    // Add listeners to existing member items
+    document.querySelectorAll('.member-item').forEach(item => {
+      addMemberButtonListeners(item);
+    });
+  </script>
+</body>
+</html>
