@@ -20,15 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initMealBudgetCalculator();
 });
 
-// Generic button handler for other buttons
-document.querySelectorAll('button').forEach(btn => {
-  if (!btn.closest('#debt-form') && !btn.closest('#notice') && !btn.hasAttribute('onclick') && 
-      btn.id !== 'get-started-btn' && btn.id !== 'calculate-budget') {
-    btn.addEventListener('click', () => {
-      alert(`${btn.innerText} feature coming soon!`);
-    });
-  }
-});
+
 
 // Meal Budget Calculator
 function initMealBudgetCalculator() {
@@ -588,7 +580,7 @@ function deleteDebt(id) {
 // Expense Tracker Functionality
 function initExpenseTracker() {
   // Check if we're on the expenses page
-  const expenseContainer = document.querySelector('.expense-container');
+  const expenseContainer =document.querySelector('.expense-container');
   if (!expenseContainer) return;
   
   console.log('Expense tracker initialized');
