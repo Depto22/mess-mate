@@ -109,32 +109,18 @@
     </section>
   </main>
   
-  <div class="testimonials-section">
+  <div class="testimonials-section" id="reviews">
     <h2 class="section-title">What Our Users Say</h2>
-    <div class="testimonials-container">
-      <div class="testimonial-card">
-        <div class="testimonial-avatar">
-          <i class="fas fa-user-circle"></i>
-        </div>
-        <p class="testimonial-text">"MESS-MATE has completely transformed how we manage our student mess. No more arguments about who owes what!"</p>
-        <p class="testimonial-author">- Depto, SUST Student</p>
-      </div>
-      <div class="testimonial-card">
-        <div class="testimonial-avatar">
-          <i class="fas fa-user-circle"></i>
-        </div>
-        <p class="testimonial-text">"The meal planning feature helps us stay within our budget while eating healthy and delicious meals."</p>
-        <p class="testimonial-author">- Aritro, BUET Student</p>
-      </div>
-      <div class="testimonial-card">
-        <div class="testimonial-avatar">
-          <i class="fas fa-user-circle"></i>
-        </div>
-        <p class="testimonial-text">"Task scheduling has made our mess cleaner and more organized. Everyone does their fair share now!"</p>
-        <p class="testimonial-author">- Soumyo, BRAC Student</p>
-      </div>
-    </div>
+    <form id="review-form" class="card" style="margin-bottom: var(--spacing-md)">
+      <input id="review-name" type="text" placeholder="Your Name" required>
+      <input id="review-university" type="text" placeholder="University" required>
+      <input id="review-time" type="text" placeholder="Time (University)" readonly>
+      <textarea id="review-text" placeholder="Write your review..." required></textarea>
+      <button type="submit">Submit Review</button>
+    </form>
+    <div id="reviews-list" class="testimonials-container"></div>
   </div>
+
 
   <footer>
     <div class="footer-content">
@@ -161,5 +147,6 @@
   </footer>
 
   <script src="script.js"></script>
+  <script src="index.js"></script>
 </body>
 

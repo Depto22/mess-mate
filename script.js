@@ -1,24 +1,4 @@
-// Get Started button functionality
-document.addEventListener('DOMContentLoaded', () => {
-  const getStartedBtn = document.getElementById('get-started-btn');
-  if (getStartedBtn) {
-    getStartedBtn.addEventListener('click', () => {
-      const dashboardSection = document.getElementById('dashboard');
-      if (dashboardSection) {
-        dashboardSection.scrollIntoView({ behavior: 'smooth' });
-      }
-    });
-  }
-  
-  // Initialize all modules
-  initExpenseTracker();
-  initMemberManagement();
-  initTaskManagement();
-  initDebtTracker();
-  initNoticeBoard();
-  initMealPlanner();
-  initMealBudgetCalculator();
-});
+// Page-specific initializers have been moved to separate JS files per page (index.js, members.js, tasks.js, expenses.js, meals.js).
 
 
 
@@ -1209,4 +1189,168 @@ function updateBudgetMeter() {
   } else {
     budgetProgress.style.backgroundColor = '#f44336'; // Red
   }
+}
+
+// Reviews (Create, Edit, Delete, Latest on Top)
+function initReviews() {
+  const reviewSection = document.getElementById('reviews');
+  if (!reviewSection) return;
+
+  if (!localStorage.getItem('reviews')) {
+    localStorage.setItem('reviews', JSON.stringify([]));
+  }
+
+  const form = document.getElementById('review-form');
+  const nameInput = document.getElementById('review-name');
+  const uniInput = document.getElementById('review-university');
+  const timeInput = document.getElementById('review-time');
+  const textInput = document.getElementById('review-text');
+
+  if (timeInput) {
+    timeInput.value = formatDateTime(new Date());
+  }
+
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const nowISO = new Date().toISOString();
+      const reviews = JSON.parse(localStorage.getItem('reviews') || '[]');
+
+      if (!nameInput.value || !uniInput.value || !textInput.value) {
+        alert('Please fill in your name, university, and review.');
+        return;
+      }
+
+      const editingId = form.dataset.editingId || null;
+      if (editingId) {
+        const idx = reviews.findIndex(r => String(r.id) === String(editingId));
+        if (idx !== -1) {
+          reviews[idx].name = nameInput.value;
+          reviews[idx].university = uniInput.value;
+          reviews[idx].text = textInput.value;
+          reviews[idx].updatedAt = nowISO;
+        }
+        delete form.dataset.editingId;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.textContent = 'Submit Review';
+      } else {
+        reviews.push({
+          id: Date.now(),
+          name: nameInput.value,
+          university: uniInput.value,
+          text: textInput.value,
+          createdAt: nowISO
+        });
+      }
+
+      localStorage.setItem('reviews', JSON.stringify(reviews));
+      form.reset();
+      if (timeInput) timeInput.value = formatDateTime(new Date());
+      updateReviewsDisplay();
+    });
+  }
+
+  updateReviewsDisplay();
+}
+
+function updateReviewsDisplay() {
+  const list = document.getElementById('reviews-list');
+  if (!list) return;
+  const reviews = JSON.parse(localStorage.getItem('reviews') || '[]');
+
+  reviews.sort((a, b) => {
+    const ta = a.updatedAt || a.createdAt;
+    const tb = b.updatedAt || b.createdAt;
+    return new Date(tb) - new Date(ta);
+  });
+
+  list.innerHTML = '';
+  if (reviews.length === 0) {
+    list.innerHTML = '<p>No reviews yet.</p>';
+    return;
+  }
+
+  reviews.forEach(r => {
+    const timeStr = formatDateTime(new Date(r.updatedAt || r.createdAt));
+    const item = document.createElement('div');
+    item.className = 'review-item';
+    item.innerHTML = `
+      <div class="review-header">
+        <strong>${escapeHtml(r.name)}</strong> • <span>${escapeHtml(r.university)}</span>
+        <span class="review-time">${timeStr}</span>
+      </div>
+      <p class="review-text">${escapeHtml(r.text)}</p>
+      <div class="review-actions">
+        <button class="edit-review" data-id="${r.id}">Edit</button>
+        <button class="delete-review" data-id="${r.id}">Delete</button>
+      </div>
+    `;
+    list.appendChild(item);
+  });
+
+  document.querySelectorAll('#reviews-list .edit-review').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id');
+      startEditReview(id);
+    });
+  });
+
+  document.querySelectorAll('#reviews-list .delete-review').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id');
+      deleteReview(id);
+    });
+  });
+}
+
+function startEditReview(id) {
+  const reviews = JSON.parse(localStorage.getItem('reviews') || '[]');
+  const r = reviews.find(x => String(x.id) === String(id));
+  const form = document.getElementById('review-form');
+  if (!r || !form) return;
+
+  const nameInput = document.getElementById('review-name');
+  const uniInput = document.getElementById('review-university');
+  const textInput = document.getElementById('review-text');
+  const timeInput = document.getElementById('review-time');
+
+  nameInput.value = r.name || '';
+  uniInput.value = r.university || '';
+  textInput.value = r.text || '';
+  if (timeInput) timeInput.value = formatDateTime(new Date());
+
+  form.dataset.editingId = String(r.id);
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if (submitBtn) submitBtn.textContent = 'Update Review';
+}
+
+function deleteReview(id) {
+  const reviews = JSON.parse(localStorage.getItem('reviews') || '[]');
+  const updated = reviews.filter(r => String(r.id) !== String(id));
+  localStorage.setItem('reviews', JSON.stringify(updated));
+  updateReviewsDisplay();
+
+  // Reset form if it was editing the deleted review
+  const form = document.getElementById('review-form');
+  if (form && form.dataset.editingId === String(id)) {
+    form.reset();
+    delete form.dataset.editingId;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.textContent = 'Submit Review';
+    const timeInput = document.getElementById('review-time');
+    if (timeInput) timeInput.value = formatDateTime(new Date());
+  }
+}
+
+function formatDateTime(d) {
+  return d.toLocaleString(undefined, {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>\"]/g, s => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'
+  })[s]);
 }
