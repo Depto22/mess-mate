@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <!-- Added Font Awesome for icons to match dashboard -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 </head>
 <body>
   <header class="navbar">
@@ -33,6 +34,11 @@
         <input id="signup-name" type="text" placeholder="Full Name" required />
         <input id="signup-id" type="text" placeholder="Unique ID (username)" required />
         <input id="signup-email" type="email" placeholder="Gmail" required />
+        <div style="display:flex; gap:1rem; align-items:center; margin:0.5rem 0;">
+          <button id="send-otp" type="button">Send OTP</button>
+          <input id="signup-otp" type="text" placeholder="Enter OTP (6 digits)" inputmode="numeric" pattern="[0-9]{6}" />
+        </div>
+        <p id="otp-status" style="color:#ffb3b3"></p>
         <input id="signup-password" type="password" placeholder="Password (min 6 chars)" required />
         <button type="submit">Continue</button>
         <p id="signup-error" style="color:#ffb3b3"></p>

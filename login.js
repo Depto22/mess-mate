@@ -93,6 +93,54 @@ document.addEventListener('DOMContentLoaded', () => {
   if (showSignupBtn) showSignupBtn.addEventListener('click', showSignup);
   if (showLoginBtn) showLoginBtn.addEventListener('click', showLogin);
 
+  // OTP elements and setup
+  const sendOtpBtn = document.getElementById('send-otp');
+  const signupOtpInput = document.getElementById('signup-otp');
+  const otpStatus = document.getElementById('otp-status');
+  let otpCooldownUntil = 0;
+  initEmailJS();
+
+  function setOtpStatus(msg, ok = false) {
+    if (otpStatus) {
+      otpStatus.textContent = msg;
+      otpStatus.style.color = ok ? '#b7f7b7' : '#ffb3b3';
+    }
+  }
+  function remainingCooldown() {
+    const now = Date.now();
+    return Math.max(0, otpCooldownUntil - now);
+  }
+  function startCooldown(ms) {
+    otpCooldownUntil = Date.now() + ms;
+  }
+
+  if (sendOtpBtn) {
+    sendOtpBtn.addEventListener('click', async () => {
+      const emailEl = document.getElementById('signup-email');
+      const email = emailEl ? emailEl.value.trim() : '';
+      if (!email) {
+        setOtpStatus('Please enter your email first.');
+        return;
+      }
+      const rem = remainingCooldown();
+      if (rem > 0) {
+        setOtpStatus(`Please wait ${Math.ceil(rem/1000)}s before requesting another OTP.`);
+        return;
+      }
+      const otp = genOTP();
+      try {
+        await sendOtpEmail(email, otp);
+        storeOTP(email, otp);
+        setOtpStatus('OTP sent! Please check your email.', true);
+        startCooldown(90 * 1000); // 90s cooldown
+      } catch (err) {
+        console.error('OTP send failed', err);
+        const detail = (err && (err.text || err.message)) ? (err.text || err.message) : 'Please try again later.';
+        setOtpStatus(`Failed to send OTP: ${detail}`);
+      }
+    });
+  }
+
   // Signup
   if (signupForm) {
     signupForm.addEventListener('submit', (e) => {
@@ -102,11 +150,21 @@ document.addEventListener('DOMContentLoaded', () => {
       const id = document.getElementById('signup-id').value.trim();
       const email = document.getElementById('signup-email').value.trim();
       const password = document.getElementById('signup-password').value;
+      const enteredOtp = signupOtpInput ? signupOtpInput.value.trim() : '';
 
       if (!name || !id || !email || !password || password.length < 6) {
         if (signupError) signupError.textContent = 'Please fill all fields. Password must be at least 6 characters.';
         return;
       }
+
+      // OTP verification (best effort)
+      const rec = getStoredOTP();
+      if (!rec || rec.email !== email || rec.expiry < Date.now() || hashOTP(enteredOtp) !== rec.h) {
+        setOtpStatus('Invalid or expired OTP.');
+        return;
+      }
+      clearStoredOTP();
+
       const users = getUsers();
       if (users.some(u => u.id === id)) {
         if (signupError) signupError.textContent = 'This Unique ID is already taken.';
@@ -306,178 +364,62 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// Client-side auth, mess creation/join, and gating logic using localStorage.
+// Duplicate DOMContentLoaded block removed to avoid conflicting logic.
 
-document.addEventListener('DOMContentLoaded', () => {
-  const showSignupBtn = document.getElementById('show-signup');
-  const showLoginBtn = document.getElementById('show-login');
-  const signupForm = document.getElementById('signup-form');
-  const loginForm = document.getElementById('login-form');
-  const postAuthSection = document.getElementById('post-auth-section');
-  const chooseCreateBtn = document.getElementById('choose-create');
-  const chooseJoinBtn = document.getElementById('choose-join');
-  const proceedDashboardBtn = document.getElementById('proceed-dashboard');
-  const createMessForm = document.getElementById('create-mess-form');
-  const joinMessForm = document.getElementById('join-mess-form');
 
-  // If already in a mess, redirect to dashboard
+// EmailJS OTP Setup
+const EMAILJS_PUBLIC_KEY = '8dyObXNkH9b_b0pxk'; // keep public key only (no secret)
+const EMAILJS_SERVICE_ID = 'service_64jyzq6';
+const EMAILJS_TEMPLATE_ID = 'template_clgx4oc';
+
+function initEmailJS() {
   try {
-    const cm = JSON.parse(localStorage.getItem('currentMess'));
-    if (cm && cm.messId) {
-      window.location.href = 'index.html';
-      return;
+    if (window.emailjs) {
+      window.emailjs.init(EMAILJS_PUBLIC_KEY);
     }
-  } catch {}
+  } catch (e) { console.warn('EmailJS init failed', e); }
+}
 
-  // Toggle forms
-  showSignupBtn.addEventListener('click', () => {
-    signupForm.style.display = 'block';
-    loginForm.style.display = 'none';
-  });
-  showLoginBtn.addEventListener('click', () => {
-    signupForm.style.display = 'none';
-    loginForm.style.display = 'block';
-  });
+function genOTP() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
 
-  // Signup
-  signupForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const name = document.getElementById('signup-name').value.trim();
-    const uid = document.getElementById('signup-id').value.trim();
-    const email = document.getElementById('signup-email').value.trim();
-    const password = document.getElementById('signup-password').value;
+function hashOTP(otp) {
+  // simple hash for obfuscation, not security
+  let h = 0;
+  for (let i = 0; i < otp.length; i++) h = ((h << 5) - h) + otp.charCodeAt(i);
+  return String(h);
+}
 
-    const errorEl = document.getElementById('signup-error');
-    errorEl.textContent = '';
+function storeOTP(email, otp, ttlMs = 15 * 60 * 1000) {
+  const expiry = Date.now() + ttlMs;
+  const record = { email, h: hashOTP(otp), expiry };
+  localStorage.setItem('signupOTP', JSON.stringify(record));
+}
 
-    if (!name || !uid || !email || !password) {
-      errorEl.textContent = 'All fields are required.';
-      return;
-    }
-    if (!/^[^@\s]+@gmail\.com$/.test(email)) {
-      errorEl.textContent = 'Please provide a valid Gmail address.';
-      return;
-    }
-    if (password.length < 6) {
-      errorEl.textContent = 'Password must be at least 6 characters.';
-      return;
-    }
+function getStoredOTP() {
+  try { return JSON.parse(localStorage.getItem('signupOTP')); } catch { return null; }
+}
 
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    if (users.some(u => u.uid === uid)) {
-      errorEl.textContent = 'Unique ID is already taken.';
-      return;
-    }
-    if (users.some(u => u.email === email)) {
-      errorEl.textContent = 'Email is already registered.';
-      return;
-    }
+function clearStoredOTP() {
+  localStorage.removeItem('signupOTP');
+}
 
-    users.push({ uid, email, name, password });
-    localStorage.setItem('users', JSON.stringify(users));
+function sendOtpEmail(email, otp) {
+  const expiry_time = new Date(Date.now() + 15 * 60 * 1000).toLocaleString();
+  const params = {
+    to_email: email,
+    otp_code: otp,
+    passcode: otp,
+    app_name: 'MESS-MATE',
+    expiry_time,
+    time: expiry_time,
+    message: `Your verification code is ${otp} for MESS-MATE. It expires at ${expiry_time}. Do not share this code.`
+  };
+  if (!window.emailjs) {
+    throw new Error('EmailJS SDK not loaded');
+  }
+  return window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params, EMAILJS_PUBLIC_KEY);
+}
 
-    localStorage.setItem('currentUser', JSON.stringify({ uid, email, name }));
-    postAuthSection.style.display = 'block';
-  });
-
-  // Login
-  loginForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const idOrEmail = document.getElementById('login-id').value.trim();
-    const password = document.getElementById('login-password').value;
-    const errorEl = document.getElementById('login-error');
-    errorEl.textContent = '';
-
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find(u => (u.uid === idOrEmail || u.email === idOrEmail) && u.password === password);
-    if (!user) {
-      errorEl.textContent = 'Invalid credentials.';
-      return;
-    }
-
-    localStorage.setItem('currentUser', JSON.stringify({ uid: user.uid, email: user.email, name: user.name }));
-
-    // NEW: If the user already belongs to a mess, set it and redirect immediately
-    const messes = JSON.parse(localStorage.getItem('messes') || '[]');
-    const existingMess = messes.find(m => m.managerUid === user.uid || (Array.isArray(m.members) && m.members.includes(user.uid)));
-    if (existingMess) {
-      const role = existingMess.managerUid === user.uid ? 'manager' : 'member';
-      localStorage.setItem('currentMess', JSON.stringify({ messId: existingMess.messId, role }));
-      window.location.href = 'index.html';
-      return;
-    }
-
-    // Otherwise, show create/join options
-    postAuthSection.style.display = 'block';
-  });
-
-  // Choose create/join actions
-  chooseCreateBtn.addEventListener('click', () => {
-    createMessForm.style.display = 'block';
-    joinMessForm.style.display = 'none';
-    proceedDashboardBtn.style.display = 'none';
-  });
-  chooseJoinBtn.addEventListener('click', () => {
-    createMessForm.style.display = 'none';
-    joinMessForm.style.display = 'block';
-    proceedDashboardBtn.style.display = 'none';
-  });
-
-  // Create mess
-  createMessForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const messId = document.getElementById('create-mess-id').value.trim();
-    const messPass = document.getElementById('create-mess-password').value;
-    const errorEl = document.getElementById('create-mess-error');
-    errorEl.textContent = '';
-
-    if (!messId || !messPass) {
-      errorEl.textContent = 'Mess ID and password are required.';
-      return;
-    }
-
-    const messes = JSON.parse(localStorage.getItem('messes') || '[]');
-    if (messes.some(m => m.messId === messId)) {
-      errorEl.textContent = 'Mess ID already exists.';
-      return;
-    }
-
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    messes.push({ messId, messPass, managerUid: currentUser.uid, members: [currentUser.uid] });
-    localStorage.setItem('messes', JSON.stringify(messes));
-
-    // Assign user as manager of this mess
-    localStorage.setItem('currentMess', JSON.stringify({ messId, role: 'manager' }));
-    proceedDashboardBtn.style.display = 'inline-block';
-  });
-
-  // Join mess
-  joinMessForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const messId = document.getElementById('join-mess-id').value.trim();
-    const messPass = document.getElementById('join-mess-password').value;
-    const errorEl = document.getElementById('join-mess-error');
-    errorEl.textContent = '';
-
-    const messes = JSON.parse(localStorage.getItem('messes') || '[]');
-    const mess = messes.find(m => m.messId === messId && m.messPass === messPass);
-    if (!mess) {
-      errorEl.textContent = 'Invalid mess credentials.';
-      return;
-    }
-
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    if (!mess.members.includes(currentUser.uid)) {
-      mess.members.push(currentUser.uid);
-      localStorage.setItem('messes', JSON.stringify(messes));
-    }
-
-    localStorage.setItem('currentMess', JSON.stringify({ messId, role: 'member' }));
-    proceedDashboardBtn.style.display = 'inline-block';
-  });
-
-  // Proceed to dashboard
-  proceedDashboardBtn.addEventListener('click', () => {
-    window.location.href = 'index.html';
-  });
-});
+// OTP handlers moved inside main DOMContentLoaded block above to prevent scope issues.
