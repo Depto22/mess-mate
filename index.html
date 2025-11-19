@@ -20,6 +20,7 @@
       <a href="#expenses"><i class="fas fa-calculator"></i> Expenses</a>
       <a href="#debts"><i class="fas fa-money-bill-wave"></i> Debts</a>
       <a href="#notice"><i class="fas fa-bullhorn"></i> Notice Board</a>
+
     </nav>
   </header>
 
@@ -31,6 +32,7 @@
     </div>
   </div>
 
+  <div id="notice-ticker" class="notice-ticker"><div class="ticker-track"></div></div>
   <div class="features-section">
     <h2 class="section-title">Why Choose MESS-MATE?</h2>
     <div class="features-container">
@@ -57,11 +59,25 @@
     </div>
   <main class="dashboard-section" id="dashboard">
     
+    <section id="profile-info" class="card">
+      <h2>Your Profile</h2>
+      <p><strong>Name:</strong> <span id="current-user-name"></span></p>
+      <p><strong>Email:</strong> <span id="current-user-email"></span></p>
+      <p><strong>Role:</strong> <span id="current-user-role"></span></p>
+      <p><strong>Mess:</strong> <span id="current-mess-id"></span></p>
+      <button type="button" id="profile-details-btn" onclick="window.location.href='profile.html'">Details</button>
+    </section>
+    
+    <section id="members-overview" class="card">
+      <h2>Members Overview</h2>
+      <ul id="members-overview-list"></ul>
+    </section>
+    
     <section id="members" class="card">
       <div class="card-icon"><i class="fas fa-users"></i></div>
       <h2>Manage Members</h2>
       <p>Add, remove, and manage all members of your mess</p>
-      <button onclick="window.location.href='members.html'">Add Member</button>
+      <button onclick="window.location.href='members.html'">Remove Member</button>
     </section>
     <section id="tasks" class="card">
       <div class="card-icon"><i class="fas fa-tasks"></i></div>
@@ -81,24 +97,44 @@
       <p>Track daily bazar costs and calculate meal rates</p>
       <button onclick="window.location.href='expenses.html'">Track Expenses</button>
     </section>
+    
+    <!-- Add Deposit Section -->
+    <section id="deposits" class="card">
+      <div class="card-icon"><i class="fas fa-wallet"></i></div>
+      <h2>Add Deposit</h2>
+      <p>Record member deposits to settle balances</p>
+      <form id="deposit-form">
+        <div style="display:flex; gap: var(--spacing-sm); flex-wrap: wrap; margin-bottom: var(--spacing-sm)">
+          <select id="deposit-member" required style="flex:1; min-width: 180px">
+            <option value="">Select member</option>
+          </select>
+          <input type="number" id="deposit-amount" placeholder="Amount" required style="flex:1; min-width: 140px">
+          <input type="date" id="deposit-date" required style="flex:1; min-width: 160px">
+        </div>
+        <button type="submit">Add Deposit</button>
+        <button type="button" id="view-deposit-history">Deposit History</button>
+      </form>
+      <!-- Deposit history moved to deposits.html -->>
+    </section>
+    
     <section id="debts" class="card">
       <div class="card-icon"><i class="fas fa-money-bill-wave"></i></div>
       <h2>Debt Tracker</h2>
       <p>Keep track of who owes what to whom</p>
       <form id="debt-form">
-        <input type="text" placeholder="Name" required>
-        <input type="number" placeholder="Amount" required>
+        <div style="display:flex; gap: var(--spacing-sm); flex-wrap: wrap; margin-bottom: var(--spacing-sm)">
+          <select id="debt-from" required style="flex:1; min-width: 180px">
+            <option value="">From whom money was received</option>
+          </select>
+          <input type="number" id="debt-amount" placeholder="Amount" required style="flex:1; min-width: 140px">
+        </div>
         <button type="submit">Add Debt</button>
       </form>
-      <table id="debt-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Amount</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <div id="debt-requests" style="margin-top: var(--spacing-sm)">
+        <strong>Pending Requests:</strong> <span id="debt-request-count">0</span>
+        <div id="debt-requests-list"></div>
+      </div>
+      <!-- Debt history table removed per request; only the Add Debt form remains -->
     </section>
     <section id="notice" class="card">
       <div class="card-icon"><i class="fas fa-bullhorn"></i></div>
@@ -149,4 +185,3 @@
   <script src="script.js"></script>
   <script src="index.js"></script>
 </body>
-

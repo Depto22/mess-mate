@@ -27,26 +27,3 @@
   display: flex;
   gap: var(--spacing-xs);
 }
-
-.back-button {
-  margin-bottom: var(--spacing-md);
-  background: var(--bg-light-transparent);
-}
-
-.member-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: var(--spacing-md);
-  font-weight: bold;
-  font-size: var(--font-size-md);
-}
-
-.member-info {
-  display: flex;
-  align-items: center;
-}

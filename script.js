@@ -102,66 +102,102 @@ function highlightRecommendedPlan(planName) {
   });
   
   // Find and highlight the matching plan
-  document.querySelectorAll('.meal-plan h3').forEach(heading => {
-    if (heading.textContent.includes(planName)) {
-      heading.closest('.meal-plan').classList.add('highlighted-plan');
-      // Scroll to the plan
+  var headings = document.querySelectorAll('.meal-plan h3');
+  for (var j = 0; j < headings.length; j++) {
+    var heading = headings[j];
+    if (heading.textContent.indexOf(planName) !== -1) {
+      var container = heading.closest('.meal-plan');
+      if (container) { container.classList.add('highlighted-plan'); }
       heading.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  });
+  }
 }
+
+// Auth helpers
+function isAuthenticated() { return !!localStorage.getItem('currentUser'); }
+function getCurrentUser() { try { return JSON.parse(localStorage.getItem('currentUser')); } catch { return null; } }
+function getCurrentMess() { try { return JSON.parse(localStorage.getItem('currentMess')); } catch { return null; } }
+function requireAuthAndMess() { const u = getCurrentUser(); const m = getCurrentMess(); if (!u || !m) { window.location.href = 'login.html'; return false; } return true; }
+function logout() { localStorage.removeItem('currentUser'); localStorage.removeItem('currentMess'); window.location.href = 'login.html'; }
+function storageKey(base) { const cm = getCurrentMess(); return cm ? `${base}:${cm.messId}` : base; }
+function getJSON(key, def) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : (def||null); } catch(_) { return def||null; } }
+function setJSON(key, obj) { localStorage.setItem(key, JSON.stringify(obj||[])); }
+function pushJSON(key, item) { var arr = getJSON(key, []); arr.push(item); setJSON(key, arr); return arr; }
+function removeById(key, id) { var arr = getJSON(key, []); var out = []; for (var i=0;i<arr.length;i++){ if (String(arr[i].id) !== String(id)) out.push(arr[i]); } setJSON(key, out); return out; }
+function addClick(rootSel, btnSel, handler) { var root = document.querySelector(rootSel); if (!root) return; root.addEventListener('click', function(e){ var t = e.target; if (t && t.matches(btnSel)) handler(t); }); }
+function renderTable(tbodySel, items, rowHtmlFn) { var body = document.querySelector(tbodySel); if (!body) return; body.innerHTML=''; for (var i=0;i<items.length;i++){ var tr = document.createElement('tr'); tr.innerHTML = rowHtmlFn(items[i]); body.appendChild(tr);} }
 
 // Member Management Functionality
 function initMemberManagement() {
   // Check if we're on the members page
   const memberContainer = document.querySelector('.member-container');
   if (!memberContainer) return;
-  
+
+  if (!requireAuthAndMess()) return;
+
   console.log('Member management initialized');
-  
-  // Initialize data storage if not exists
-  if (!localStorage.getItem('members')) {
-    localStorage.setItem('members', JSON.stringify([]));
+
+  // Initialize data storage if not exists (mess-scoped)
+  const membersKey = storageKey('members');
+  if (!localStorage.getItem(membersKey)) {
+    localStorage.setItem(membersKey, JSON.stringify([]));
   }
-  
-  // Add member form submission
+
+  // Update Remove Member info card messaging based on role
+  const currentMess = getCurrentMess();
+  const isManager = currentMess && currentMess.role === 'manager';
+  const removeInfoCard = document.querySelector('.member-form');
+  if (removeInfoCard) {
+    const headingEl = removeInfoCard.querySelector('h2');
+    const paragraphEl = removeInfoCard.querySelector('p');
+    if (isManager) {
+      if (headingEl) headingEl.textContent = 'Remove Member';
+      if (paragraphEl) paragraphEl.textContent = 'Select a member from the list below and click Delete.';
+    } else {
+      if (headingEl) headingEl.textContent = 'Remove Member (Manager Only)';
+      if (paragraphEl) paragraphEl.textContent = 'This feature is only available to the mess manager.';
+    }
+  }
+
+  // Add member form submission (manager only)
   const memberForm = document.getElementById('member-form');
   if (memberForm) {
-    memberForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      const name = document.getElementById('member-name').value;
-      const email = document.getElementById('member-email').value;
-      const phone = document.getElementById('member-phone').value;
-      const notes = document.getElementById('member-notes').value;
-      
-      if (!name || !email) {
-        alert('Please fill all required fields');
-        return;
-      }
-      
-      const member = {
-        id: Date.now(),
-        name,
-        email,
-        phone,
-        notes,
-        joinDate: new Date().toISOString().split('T')[0]
-      };
-      
-      // Save member
-      const members = JSON.parse(localStorage.getItem('members'));
-      members.push(member);
-      localStorage.setItem('members', JSON.stringify(members));
-      
-      // Update UI
-      updateMembersList();
-      
-      // Reset form
-      memberForm.reset();
-    });
+    const currentMess = getCurrentMess();
+    const isManager = currentMess && currentMess.role === 'manager';
+    if (!isManager) {
+      // Hide add form for non-managers
+      memberForm.style.display = 'none';
+    } else {
+      memberForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const name = document.getElementById('member-name').value;
+        const email = document.getElementById('member-email').value;
+        const phone = document.getElementById('member-phone').value;
+        const notes = document.getElementById('member-notes').value;
+
+        if (!name || !email) {
+          alert('Please fill all required fields');
+          return;
+        }
+
+        const member = {
+          id: Date.now(),
+          name,
+          email,
+          phone,
+          notes,
+          joinDate: new Date().toISOString().split('T')[0]
+        };
+
+        const members = JSON.parse(localStorage.getItem(membersKey));
+        members.push(member);
+        localStorage.setItem(membersKey, JSON.stringify(members));
+        updateMembersList();
+        memberForm.reset();
+      });
+    }
   }
-  
+
   // Initialize UI
   updateMembersList();
 }
@@ -170,17 +206,22 @@ function initMemberManagement() {
 function updateMembersList() {
   const membersContainer = document.getElementById('members-container');
   if (!membersContainer) return;
-  
-  const members = JSON.parse(localStorage.getItem('members'));
+
+  const members = JSON.parse(localStorage.getItem(storageKey('members')) || '[]');
+  const currentUser = getCurrentUser();
+  const currentMess = getCurrentMess();
+  const isManager = currentMess && currentMess.role === 'manager';
+
   membersContainer.innerHTML = '';
-  
+
   if (members.length === 0) {
     membersContainer.innerHTML = '<p>No members added yet.</p>';
     return;
   }
-  
+
   members.forEach(member => {
     const initials = member.name.split(' ').map(n => n[0]).join('');
+    const isSelf = currentUser && member.email === currentUser.email;
     const memberItem = document.createElement('div');
     memberItem.className = 'member-item';
     memberItem.innerHTML = `
@@ -192,28 +233,54 @@ function updateMembersList() {
         </div>
       </div>
       <div class="member-actions">
-        <button class="edit-btn" data-id="${member.id}">Edit</button>
-        <button class="delete-btn" data-id="${member.id}">Delete</button>
+        ${isSelf ? `<button class="edit-btn" data-id="${member.id}">Edit</button>` : ''}
+        ${isManager ? `<button class="delete-btn" data-id="${member.id}">Delete</button>` : ''}
       </div>
     `;
     membersContainer.appendChild(memberItem);
   });
-  
-  // Add delete functionality
+
+  // Add delete functionality (manager only)
   document.querySelectorAll('#members-container .delete-btn').forEach(btn => {
     btn.addEventListener('click', function() {
       const id = this.getAttribute('data-id');
       deleteMember(id);
     });
   });
+
+  // Add edit functionality (self only)
+  document.querySelectorAll('#members-container .edit-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const id = this.getAttribute('data-id');
+      const key = storageKey('members');
+      const members = JSON.parse(localStorage.getItem(key) || '[]');
+      const idx = members.findIndex(m => String(m.id) === String(id));
+      if (idx === -1) return;
+      const member = members[idx];
+      const currentUser = getCurrentUser();
+      if (!currentUser || member.email !== currentUser.email) return; // guard
+      const newPhone = prompt('Update phone:', member.phone || '');
+      const newNotes = prompt('Update notes:', member.notes || '');
+      members[idx].phone = newPhone;
+      members[idx].notes = newNotes;
+      localStorage.setItem(key, JSON.stringify(members));
+      updateMembersList();
+    });
+  });
 }
 
-// Delete a member
+// Delete a member (manager only)
 function deleteMember(id) {
-  const members = JSON.parse(localStorage.getItem('members'));
+  const key = storageKey('members');
+  const currentMess = getCurrentMess();
+  const isManager = currentMess && currentMess.role === 'manager';
+  if (!isManager) {
+    alert('Only the manager can remove members.');
+    return;
+  }
+  const members = JSON.parse(localStorage.getItem(key) || '[]');
   const updatedMembers = members.filter(member => member.id != id);
-  localStorage.setItem('members', JSON.stringify(updatedMembers));
-  
+  localStorage.setItem(key, JSON.stringify(updatedMembers));
   updateMembersList();
 }
 
@@ -222,7 +289,9 @@ function initTaskManagement() {
   // Check if we're on the tasks page
   const taskContainer = document.querySelector('.task-container');
   if (!taskContainer) return;
-  
+
+  if (!requireAuthAndMess()) return;
+
   console.log('Task management initialized');
   
   // Initialize data storage if not exists
@@ -286,16 +355,16 @@ function populateAssignedToDropdown() {
     assignedToSelect.remove(1);
   }
   
-  // Get members from localStorage
-  const members = JSON.parse(localStorage.getItem('members') || '[]');
+  // Get members from localStorage (mess-scoped)
+  const members = JSON.parse(localStorage.getItem(storageKey('members')) || '[]');
   
   // Add members to dropdown
-   members.forEach(member => {
-     const option = document.createElement('option');
-     option.value = member.name;
-     option.textContent = member.name;
-     assignedToSelect.appendChild(option);
-   });
+  members.forEach(member => {
+    const option = document.createElement('option');
+    option.value = member.name;
+    option.textContent = member.name;
+    assignedToSelect.appendChild(option);
+  });
 }
 
 // Update tasks list in the UI
@@ -374,40 +443,59 @@ function initDebtTracker() {
   
   console.log('Debt tracker initialized');
   
-  // Initialize data storage if not exists
-  if (!localStorage.getItem('debts')) {
-    localStorage.setItem('debts', JSON.stringify([]));
+  // Initialize data storage (mess-scoped)
+  const debtsKey = storageKey('debts');
+  if (!localStorage.getItem(debtsKey)) {
+    localStorage.setItem(debtsKey, JSON.stringify([]));
   }
-  
-  // Add debt form submission
-  debtForm.addEventListener('submit', e => {
+
+  // Populate member select (payer only)
+  const fromSel = document.getElementById('debt-from');
+  const amtInput = document.getElementById('debt-amount');
+  const members = JSON.parse(localStorage.getItem(storageKey('members')) || '[]');
+  if (fromSel) {
+    members.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = `${m.name} (${m.email})`;
+      fromSel.appendChild(opt);
+    });
+  }
+
+
+
+  var debtRequestsKey = storageKey('debtRequests');
+  if (!localStorage.getItem(debtRequestsKey)) { localStorage.setItem(debtRequestsKey, JSON.stringify([])); }
+
+  // Add debt request: receiver (current user) selects payer and amount
+  debtForm.addEventListener('submit', function(e) {
     e.preventDefault();
-    const name = e.target.querySelector('input[type="text"]').value.trim();
-    const amount = e.target.querySelector('input[type="number"]').value.trim();
-    
-    if (name && amount) {
-      const debt = {
-        id: Date.now(),
-        name,
-        amount: parseFloat(amount),
-        date: new Date().toISOString().split('T')[0]
-      };
-      
-      // Save debt
-      const debts = JSON.parse(localStorage.getItem('debts'));
-      debts.push(debt);
-      localStorage.setItem('debts', JSON.stringify(debts));
-      
-      // Update UI
-      updateDebtsList();
-      
-      // Reset form
-      e.target.reset();
-    }
+    var cu = getCurrentUser();
+    var me = null; for (var i=0;i<members.length;i++){ if (members[i].email === (cu?cu.email:'')) { me = members[i]; break; } }
+    if (!me) { alert('Join the mess first'); return; }
+    var fromId = fromSel ? fromSel.value : '';
+    var amountVal = amtInput ? parseFloat(amtInput.value) : 0;
+    if (!fromId || !amountVal || amountVal <= 0) { alert('Please select member and enter a valid amount'); return; }
+    var fromMember = members.find(function(m){ return String(m.id) === String(fromId); });
+    var toMember = me;
+    var dateStr = new Date().toISOString().split('T')[0];
+
+    var req = { id: Date.now(), fromId: fromId, toId: toMember.id, amount: amountVal, date: dateStr, status: 'pending',
+                fromName: fromMember ? fromMember.name : 'Unknown', fromEmail: fromMember ? fromMember.email : '',
+                toName: toMember ? toMember.name : 'Unknown', toEmail: toMember ? toMember.email : '' };
+    var reqs = JSON.parse(localStorage.getItem(debtRequestsKey) || '[]');
+    reqs.push(req);
+    localStorage.setItem(debtRequestsKey, JSON.stringify(reqs));
+
+    // Update UI
+    updateDebtRequestsUI();
+
+    // Reset form
+    e.target.reset();
   });
   
   // Initialize UI
-  updateDebtsList();
+  updateDebtRequestsUI();
 }
 
 // Notice Board Functionality
@@ -509,6 +597,27 @@ function updateNoticesDisplay() {
       deleteNotice(id);
     });
   });
+  initNoticeTicker();
+}
+
+function initNoticeTicker() {
+  const ticker = document.getElementById('notice-ticker');
+  if (!ticker) return;
+  let track = ticker.querySelector('.ticker-track');
+  if (!track) {
+    track = document.createElement('div');
+    track.className = 'ticker-track';
+    ticker.appendChild(track);
+  }
+  const notices = JSON.parse(localStorage.getItem('notices') || '[]');
+  const texts = notices.length ? notices.map(n => n.text) : ['No notices posted yet'];
+  const joined = texts.join(' • ');
+  track.innerHTML = `${escapeHtml(joined)} \u00A0\u00A0 ${escapeHtml(joined)}`;
+  void track.offsetWidth;
+  const distancePx = track.offsetWidth * 2;
+  const pxPerSec = 140;
+  const duration = distancePx / pxPerSec;
+  track.style.animationDuration = `${duration}s`;
 }
 
 // Delete a notice
@@ -524,23 +633,25 @@ function deleteNotice(id) {
 function updateDebtsList() {
   const debtTable = document.querySelector('#debt-table tbody');
   if (!debtTable) return;
-  
-  const debts = JSON.parse(localStorage.getItem('debts'));
+  const debtsKey = storageKey('debts');
+  const debts = JSON.parse(localStorage.getItem(debtsKey) || '[]').sort((a,b)=>b.id - a.id);
+  const members = JSON.parse(localStorage.getItem(storageKey('members')) || '[]');
   debtTable.innerHTML = '';
-  
   debts.forEach(debt => {
+    const from = members.find(m => String(m.id) === String(debt.fromId));
+    const to = members.find(m => String(m.id) === String(debt.toId));
     const row = document.createElement('tr');
     row.innerHTML = `
-      <td>${debt.name}</td>
+      <td>${debt.date || ''}</td>
+      <td>${from ? from.name : 'Unknown'}</td>
+      <td>${to ? to.name : 'Unknown'}</td>
       <td>${debt.amount} BDT</td>
       <td>
-        <button class="delete-btn" data-id="${debt.id}">Delete</button>
+        <button type="button" class="delete-btn" data-id="${debt.id}">Delete</button>
       </td>
     `;
     debtTable.appendChild(row);
   });
-  
-  // Add delete functionality
   document.querySelectorAll('#debt-table .delete-btn').forEach(btn => {
     btn.addEventListener('click', function() {
       const id = this.getAttribute('data-id');
@@ -551,11 +662,242 @@ function updateDebtsList() {
 
 // Delete a debt
 function deleteDebt(id) {
-  const debts = JSON.parse(localStorage.getItem('debts'));
-  const updatedDebts = debts.filter(debt => debt.id != id);
-  localStorage.setItem('debts', JSON.stringify(updatedDebts));
-  
+  const debtsKey = storageKey('debts');
+  const debts = JSON.parse(localStorage.getItem(debtsKey) || '[]');
+  const updatedDebts = debts.filter(debt => String(debt.id) !== String(id));
+  localStorage.setItem(debtsKey, JSON.stringify(updatedDebts));
   updateDebtsList();
+}
+
+function updateDebtRequestsUI() {
+  var container = document.getElementById('debt-requests');
+  if (!container) return;
+  var countEl = document.getElementById('debt-request-count');
+  var listEl = document.getElementById('debt-requests-list');
+  var debtRequestsKey = storageKey('debtRequests');
+  var reqs = getJSON(debtRequestsKey, []);
+  var cu = getCurrentUser();
+  var members = getJSON(storageKey('members'), []);
+  var me = null;
+  for (var i=0;i<members.length;i++){ if (members[i].email === (cu ? cu.email : '')) { me = members[i]; break; } }
+  var myId = me ? String(me.id) : null;
+  var pending = [];
+  for (var j=0;j<reqs.length;j++){ var r=reqs[j]; if (r.status==='pending' && (String(r.fromId)===myId || r.fromEmail=== (cu?cu.email:''))) pending.push(r); }
+  if (countEl) countEl.textContent = String(pending.length);
+  if (listEl) {
+    listEl.innerHTML = '';
+    for (var k=0;k<pending.length;k++){
+      var r = pending[k];
+      var row = document.createElement('div');
+      row.innerHTML = '<div>'+escapeHtml(r.fromName)+' → '+escapeHtml(r.toName)+' • '+r.amount+' BDT • '+escapeHtml(r.date)+'</div>' +
+                      '<div style="display:flex; gap:0.5rem; margin-top:0.25rem;">' +
+                      '<button class="accept-debt" data-id="'+r.id+'">Accept</button>' +
+                      '<button class="reject-debt" data-id="'+r.id+'">Reject</button>' +
+                      '</div>';
+      listEl.appendChild(row);
+    }
+  }
+  addClick('#debt-requests', '.accept-debt', function(btn){ acceptDebtRequest(btn.getAttribute('data-id')); });
+  addClick('#debt-requests', '.reject-debt', function(btn){ rejectDebtRequest(btn.getAttribute('data-id')); });
+}
+
+function acceptDebtRequest(id) {
+  var debtRequestsKey = storageKey('debtRequests');
+  var reqs = getJSON(debtRequestsKey, []);
+  var idx = -1; for (var i=0;i<reqs.length;i++){ if (String(reqs[i].id)===String(id)) { idx=i; break; } }
+  if (idx===-1) return;
+  var r = reqs[idx];
+  var cu = getCurrentUser();
+  var members = getJSON(storageKey('members'), []);
+  var me = null; for (var j=0;j<members.length;j++){ if (members[j].email === (cu?cu.email:'')) { me = members[j]; break; } }
+  var myId = me ? String(me.id) : null;
+  if (!(String(r.fromId)===myId || r.fromEmail===(cu?cu.email:''))) { alert('Only the payer can accept this request'); return; }
+  reqs[idx].status = 'accepted';
+  setJSON(debtRequestsKey, reqs);
+  var depositsKey = storageKey('deposits');
+  var deposits = getJSON(depositsKey, []);
+  deposits.push({ id: Date.now()+1, memberId: r.toId, memberName: r.toName, memberEmail: r.toEmail, amount: Number(r.amount), date: r.date });
+  deposits.push({ id: Date.now()+2, memberId: r.fromId, memberName: r.fromName, memberEmail: r.fromEmail, amount: -Number(r.amount), date: r.date });
+  setJSON(depositsKey, deposits);
+  var debtsKey = storageKey('debts');
+  var debts = getJSON(debtsKey, []);
+  debts.push({ id: Date.now(), fromId: r.fromId, toId: r.toId, amount: r.amount, date: r.date });
+  setJSON(debtsKey, debts);
+  updateDepositsTable();
+  updateDebtRequestsUI();
+}
+
+function rejectDebtRequest(id) {
+  var debtRequestsKey = storageKey('debtRequests');
+  var reqs = getJSON(debtRequestsKey, []);
+  var cu = getCurrentUser();
+  var members = getJSON(storageKey('members'), []);
+  var me = null; for (var j=0;j<members.length;j++){ if (members[j].email === (cu?cu.email:'')) { me = members[j]; break; } }
+  var myId = me ? String(me.id) : null;
+  for (var i=0;i<reqs.length;i++){ if (String(reqs[i].id)===String(id)) { if (!(String(reqs[i].fromId)===myId || reqs[i].fromEmail===(cu?cu.email:''))) { alert('Only the payer can reject this request'); return; } reqs[i].status='denied'; break; } }
+  setJSON(debtRequestsKey, reqs);
+  updateDebtRequestsUI();
+}
+// Add Deposit Feature (mess-scoped)
+function initDeposits() {
+  const depositForm = document.getElementById('deposit-form');
+  const depositTableBody = document.querySelector('#deposit-table tbody');
+  if (!depositForm) return;
+
+  // Ensure storage for deposits (scoped by mess)
+  const depositsKey = storageKey('deposits');
+  if (!localStorage.getItem(depositsKey)) {
+    localStorage.setItem(depositsKey, JSON.stringify([]));
+  }
+
+  // Populate member dropdown
+  const memberSelect = document.getElementById('deposit-member');
+  const members = JSON.parse(localStorage.getItem(storageKey('members')) || '[]');
+  if (memberSelect) {
+    memberSelect.innerHTML = '<option value="">Select member</option>';
+    if (members.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.disabled = true;
+      opt.textContent = 'No members yet';
+      memberSelect.appendChild(opt);
+    } else {
+      members.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = `${m.name} (${m.email})`;
+        memberSelect.appendChild(opt);
+      });
+    }
+  }
+
+  // Default date to today
+  const dateInput = document.getElementById('deposit-date');
+  if (dateInput && !dateInput.value) {
+    dateInput.value = new Date().toISOString().split('T')[0];
+  }
+
+  const historyBtn = document.getElementById('view-deposit-history');
+  if (historyBtn) {
+    historyBtn.addEventListener('click', () => {
+      window.location.href = 'deposits.html';
+    });
+  }
+
+  // Handle submit
+  depositForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const memberId = memberSelect ? memberSelect.value : '';
+    const amount = parseFloat(document.getElementById('deposit-amount').value || '0');
+    const date = (document.getElementById('deposit-date').value) || new Date().toISOString().split('T')[0];
+    // Note field removed
+
+    if (!memberId) { alert('Please select a member'); return; }
+    if (!amount || amount <= 0) { alert('Please enter a valid amount'); return; }
+
+    const m = members.find(x => String(x.id) === String(memberId));
+
+    const deposit = {
+      id: Date.now(),
+      memberId: m ? m.id : memberId,
+      memberName: m ? m.name : 'Unknown',
+      memberEmail: m ? m.email : '',
+      amount: amount,
+      date: date
+    };
+
+    const existing = JSON.parse(localStorage.getItem(depositsKey) || '[]');
+    // If editing, update existing entry; otherwise push new
+    if (depositForm.dataset.editingId) {
+      const editId = depositForm.dataset.editingId;
+      const idx = existing.findIndex(x => String(x.id) === String(editId));
+      if (idx !== -1) {
+        existing[idx] = {
+          ...existing[idx],
+          memberId: deposit.memberId,
+          memberName: deposit.memberName,
+          memberEmail: deposit.memberEmail,
+          amount: deposit.amount,
+          date: deposit.date
+        };
+      }
+      delete depositForm.dataset.editingId;
+    } else {
+      existing.push(deposit);
+    }
+    localStorage.setItem(depositsKey, JSON.stringify(existing));
+
+    updateDepositsTable();
+    depositForm.reset();
+    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+    const submitBtn = depositForm.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.textContent = 'Add Deposit';
+  });
+
+  // Initial render
+  updateDepositsTable();
+}
+
+function updateDepositsTable() {
+  var depositsKey = storageKey('deposits');
+  var deposits = getJSON(depositsKey, []);
+  deposits.sort(function(a,b){ return b.id - a.id; });
+  renderTable('#deposit-table tbody', deposits, function(d){
+    var memberDisplay = (d.memberName || '') + (d.memberEmail ? ' ('+d.memberEmail+')' : '');
+    return '<td>'+escapeHtml(d.date || '')+'</td>'+
+           '<td>'+escapeHtml(memberDisplay)+'</td>'+
+           '<td>৳'+((Number(d.amount)||0).toFixed(2))+'</td>'+
+           '<td><div style="display:flex; flex-direction: column; gap: 0.25rem;">'+
+           '<button type="button" class="edit-btn" data-id="'+d.id+'">Edit</button>'+
+           '<button type="button" class="delete-btn" data-id="'+d.id+'">Delete</button>'+
+           '</div></td>';
+  });
+  addClick('#deposit-table', '.delete-btn', function(btn){ deleteDeposit(btn.getAttribute('data-id')); });
+  addClick('#deposit-table', '.edit-btn', function(btn){ startEditDeposit(btn.getAttribute('data-id')); });
+}
+
+function startEditDeposit(id) {
+  const depositsKey = storageKey('deposits');
+  const deposits = JSON.parse(localStorage.getItem(depositsKey) || '[]');
+  const d = deposits.find(x => String(x.id) === String(id));
+  const form = document.getElementById('deposit-form');
+  if (!d || !form) return;
+  const editCard = document.getElementById('edit-deposit-card');
+  if (editCard) editCard.style.display = '';
+  form.style.display = '';
+
+  const memberSelect = document.getElementById('deposit-member');
+  const amountInput = document.getElementById('deposit-amount');
+  const dateInput = document.getElementById('deposit-date');
+
+  // Ensure member option exists and select it
+  if (memberSelect) {
+    let optionExists = false;
+    Array.from(memberSelect.options).forEach(opt => {
+      if (String(opt.value) === String(d.memberId)) optionExists = true;
+    });
+    if (!optionExists) {
+      const opt = document.createElement('option');
+      opt.value = d.memberId;
+      opt.textContent = d.memberName ? `${d.memberName} (${d.memberEmail || 'unknown'})` : 'Unknown Member';
+      memberSelect.appendChild(opt);
+    }
+    memberSelect.value = String(d.memberId);
+  }
+
+  if (amountInput) amountInput.value = d.amount;
+  if (dateInput) dateInput.value = d.date || new Date().toISOString().split('T')[0];
+
+  form.dataset.editingId = String(d.id);
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if (submitBtn) submitBtn.textContent = 'Update Deposit';
+  if (amountInput) amountInput.focus();
+}
+
+function deleteDeposit(id) {
+  var depositsKey = storageKey('deposits');
+  removeById(depositsKey, id);
+  updateDepositsTable();
 }
 // Expense Tracker Functionality
 function initExpenseTracker() {
@@ -573,9 +915,12 @@ function initExpenseTracker() {
   if (!localStorage.getItem('mealCounts')) {
     localStorage.setItem('mealCounts', JSON.stringify([]));
   }
+  if (!localStorage.getItem('sharedExpenses')) {
+    localStorage.setItem('sharedExpenses', JSON.stringify([]));
+  }
   
-  if (!localStorage.getItem('members')) {
-    localStorage.setItem('members', JSON.stringify([]));
+  if (!localStorage.getItem(storageKey('members'))) {
+    localStorage.setItem(storageKey('members'), JSON.stringify([]));
   }
   
   // Populate member select dropdown
@@ -583,8 +928,7 @@ function initExpenseTracker() {
   if (memberSelect) {
     // Clear existing options
     memberSelect.innerHTML = '<option value="">Select Member</option>';
-    
-    const members = JSON.parse(localStorage.getItem('members'));
+    const members = JSON.parse(localStorage.getItem(storageKey('members')) || '[]');
     if (members.length === 0) {
       const option = document.createElement('option');
       option.value = "";
@@ -593,11 +937,11 @@ function initExpenseTracker() {
       memberSelect.appendChild(option);
     } else {
       members.forEach(member => {
-         const option = document.createElement('option');
-         option.value = member.name;
-         option.textContent = member.name;
-         memberSelect.appendChild(option);
-       });
+        const option = document.createElement('option');
+        option.value = member.name;
+        option.textContent = member.name;
+        memberSelect.appendChild(option);
+      });
     }
   }
   
@@ -617,25 +961,25 @@ function initExpenseTracker() {
         return;
       }
       
-      const expense = {
-        id: Date.now(),
-        date,
-        amount,
-        description,
-        category
-      };
-      
-      // Save expense
-      const expenses = JSON.parse(localStorage.getItem('expenses'));
-      expenses.push(expense);
+      const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+      const editingId = expenseForm.dataset.editingId || null;
+      if (editingId) {
+        const idx = expenses.findIndex(e => String(e.id) === String(editingId));
+        if (idx !== -1) {
+          expenses[idx] = { ...expenses[idx], date, amount, description, category };
+        }
+        delete expenseForm.dataset.editingId;
+        const submitBtn = expenseForm.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.textContent = 'Add Expense';
+      } else {
+        expenses.push({ id: Date.now(), date, amount, description, category });
+      }
       localStorage.setItem('expenses', JSON.stringify(expenses));
       
-      // Update UI
       updateExpenseList();
       updateExpenseSummary();
-      updateMealPlannerSpentAmount(); // Update meal planner spent amount
+      updateMealPlannerSpentAmount();
       
-      // Reset form
       expenseForm.reset();
     });
   }
@@ -657,7 +1001,7 @@ function initExpenseTracker() {
         return;
       }
       
-      const members = JSON.parse(localStorage.getItem('members'));
+      const members = JSON.parse(localStorage.getItem(storageKey('members')) || '[]');
       const member = members.find(m => m.name === memberName);
       
       const mealCount = {
@@ -686,6 +1030,35 @@ function initExpenseTracker() {
     });
   }
   
+  const sharedForm = document.getElementById('shared-expense-form');
+  if (sharedForm) {
+    sharedForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const date = document.getElementById('shared-expense-date').value;
+      const amount = parseFloat(document.getElementById('shared-expense-amount').value);
+      const description = document.getElementById('shared-expense-description').value;
+      const category = document.getElementById('shared-expense-category').value;
+      if (!date || !amount || !description) { alert('Please fill all required fields'); return; }
+      const shared = JSON.parse(localStorage.getItem('sharedExpenses') || '[]');
+      const editingId = sharedForm.dataset.editingId || null;
+      if (editingId) {
+        const idx = shared.findIndex(e => String(e.id) === String(editingId));
+        if (idx !== -1) {
+          shared[idx] = { ...shared[idx], date, amount, description, category };
+        }
+        delete sharedForm.dataset.editingId;
+        const submitBtn = sharedForm.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.textContent = 'Add Shared Cost';
+      } else {
+        shared.push({ id: Date.now(), date, amount, description, category });
+      }
+      localStorage.setItem('sharedExpenses', JSON.stringify(shared));
+      updateSharedExpenseList();
+      updateExpenseSummary();
+      updateMemberSummary();
+      sharedForm.reset();
+    });
+  }
   // Calculate button functionality
   const calculateBtn = document.getElementById('calculate-btn');
   if (calculateBtn) {
@@ -704,43 +1077,99 @@ function initExpenseTracker() {
   
   // Initialize UI
   updateExpenseList();
+  updateSharedExpenseList();
   updateMealCountList();
   updateExpenseSummary();
   updateMemberSummary();
+  updateMessCostSummary();
 }
 
 // Update expense list in the UI
 function updateExpenseList() {
-  const expenseList = document.getElementById('expense-list');
-  if (!expenseList) return;
-  
-  const expenses = JSON.parse(localStorage.getItem('expenses'));
-  expenseList.innerHTML = '';
-  
-  expenses.forEach(expense => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${formatDate(expense.date)}</td>
-      <td>${expense.description}</td>
-      <td>${expense.category}</td>
-      <td>${expense.amount} BDT</td>
-      <td>
-        <button class="delete-btn" data-id="${expense.id}">Delete</button>
-      </td>
-    `;
-    expenseList.appendChild(row);
+  var expenses = getJSON('expenses', []);
+  renderTable('#expense-list', expenses, function(expense){
+    return '<td>'+formatDate(expense.date)+'</td>'+
+           '<td>'+expense.description+'</td>'+
+           '<td>'+expense.category+'</td>'+
+           '<td>'+expense.amount+' BDT</td>'+
+           '<td><button class="edit-btn" data-id="'+expense.id+'">Edit</button> '+
+           '<button class="delete-btn" data-id="'+expense.id+'">Delete</button></td>';
   });
-  
-  // Add delete functionality
-  document.querySelectorAll('#expense-list .delete-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-      const id = this.getAttribute('data-id');
-      deleteExpense(id);
-    });
+  addClick('#expense-list', '.edit-btn', function(btn){ startEditExpense(btn.getAttribute('data-id')); });
+  addClick('#expense-list', '.delete-btn', function(btn){ deleteExpense(btn.getAttribute('data-id')); });
+}
+
+// Update shared expense list in the UI
+function updateSharedExpenseList() {
+  var listSel = '#shared-expense-list';
+  var listEl = document.getElementById('shared-expense-list');
+  if (!listEl) return;
+  var shared = getJSON('sharedExpenses', []);
+  if (!shared.length) {
+    listEl.innerHTML = '<tr><td colspan="5">No shared expenses yet.</td></tr>';
+    updateMessCostSummary();
+    return;
+  }
+  renderTable(listSel, shared, function(item){
+    return '<td>'+formatDate(item.date)+'</td>'+
+           '<td>'+item.description+'</td>'+
+           '<td>'+item.category+'</td>'+
+           '<td>'+item.amount+' BDT</td>'+
+           '<td><button class="edit-btn" data-id="'+item.id+'">Edit</button> '+
+           '<button class="delete-btn" data-id="'+item.id+'">Delete</button></td>';
   });
+  addClick(listSel, '.edit-btn', function(btn){ startEditSharedExpense(btn.getAttribute('data-id')); });
+  addClick(listSel, '.delete-btn', function(btn){ deleteSharedExpense(btn.getAttribute('data-id')); });
+  updateMessCostSummary();
+}
+
+function deleteSharedExpense(id) {
+  removeById('sharedExpenses', id);
+  updateSharedExpenseList();
+  updateExpenseSummary();
+  updateMemberSummary();
+  updateMessCostSummary();
 }
 
 // Update meal count list in the UI
+function startEditExpense(id) {
+  const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+  const exp = expenses.find(e => String(e.id) === String(id));
+  const form = document.getElementById('expense-form');
+  if (!exp || !form) return;
+  const dateEl = document.getElementById('expense-date');
+  const amountEl = document.getElementById('expense-amount');
+  const descEl = document.getElementById('expense-description');
+  const catEl = document.getElementById('expense-category');
+  if (dateEl) dateEl.value = exp.date;
+  if (amountEl) amountEl.value = exp.amount;
+  if (descEl) descEl.value = exp.description;
+  if (catEl) catEl.value = exp.category;
+  form.dataset.editingId = String(exp.id);
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if (submitBtn) submitBtn.textContent = 'Update Expense';
+  if (amountEl) amountEl.focus();
+}
+
+function startEditSharedExpense(id) {
+  const shared = JSON.parse(localStorage.getItem('sharedExpenses') || '[]');
+  const item = shared.find(e => String(e.id) === String(id));
+  const form = document.getElementById('shared-expense-form');
+  if (!item || !form) return;
+  const dateEl = document.getElementById('shared-expense-date');
+  const amountEl = document.getElementById('shared-expense-amount');
+  const descEl = document.getElementById('shared-expense-description');
+  const catEl = document.getElementById('shared-expense-category');
+  if (dateEl) dateEl.value = item.date;
+  if (amountEl) amountEl.value = item.amount;
+  if (descEl) descEl.value = item.description;
+  if (catEl) catEl.value = item.category;
+  form.dataset.editingId = String(item.id);
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if (submitBtn) submitBtn.textContent = 'Update Shared Cost';
+  if (amountEl) amountEl.focus();
+}
+
 function updateMealCountList() {
   const mealCountList = document.getElementById('meal-count-list');
   if (!mealCountList) return;
@@ -782,25 +1211,20 @@ function updateExpenseSummary() {
   if (!totalExpensesEl || !totalMealsEl || !mealRateEl) return;
   
   const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+  const shared = JSON.parse(localStorage.getItem('sharedExpenses') || '[]');
   const mealCounts = JSON.parse(localStorage.getItem('mealCounts') || '[]');
-  
-  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const totalMeals = mealCounts.reduce((sum, mealCount) => sum + mealCount.total, 0);
-  
-  let mealRate = 0;
-  if (totalMeals > 0) {
-    mealRate = totalExpenses / totalMeals;
-  }
-  
-  totalExpensesEl.textContent = `${totalExpenses.toFixed(2)} BDT`;
-  totalMealsEl.textContent = totalMeals;
+  const totalMealExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalSharedCost = shared.reduce((sum, e) => sum + e.amount, 0);
+  const totalMeals = mealCounts.reduce((sum, m) => sum + m.total, 0);
+  const mealRate = totalMeals > 0 ? (totalMealExpenses / totalMeals) : 0;
+  totalExpensesEl.textContent = `${totalMealExpenses.toFixed(2)} BDT`;
+  totalMealsEl.textContent = String(totalMeals);
   mealRateEl.textContent = `${mealRate.toFixed(2)} BDT`;
-  
   // Budget meter update
   const budgetProgress = document.getElementById('budget-progress');
   if (budgetProgress) {
     const budget = 1000;
-    const spent = totalExpenses;
+    const spent = totalMealExpenses;
     const percentage = (spent / budget) * 100;
     budgetProgress.style.width = `${percentage}%`;
     
@@ -813,6 +1237,29 @@ function updateExpenseSummary() {
       budgetProgress.style.backgroundColor = '#f44336';
     }
   }
+  updateMessCostSummary();
+}
+
+function updateMessCostSummary() {
+  const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+  const shared = JSON.parse(localStorage.getItem('sharedExpenses') || '[]');
+  const mealCounts = JSON.parse(localStorage.getItem('mealCounts') || '[]');
+  const totalMealExpenses = expenses.reduce((s,e)=>s+e.amount,0);
+  const totalSharedCost = shared.reduce((s,e)=>s+e.amount,0);
+  const totalCost = totalMealExpenses + totalSharedCost;
+  const totalMeals = mealCounts.reduce((s,m)=>s+m.total,0);
+  const mealRate = totalMeals > 0 ? (totalMealExpenses/totalMeals) : 0;
+  const depositsKey = storageKey('deposits');
+  const deposits = JSON.parse(localStorage.getItem(depositsKey) || '[]');
+  const totalDeposits = deposits.reduce((s,d)=>s+(Number(d.amount)||0),0);
+  const remaining = totalDeposits - totalCost;
+  const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  setText('mess-total-meal-cost', `${totalMealExpenses.toFixed(2)} BDT`);
+  setText('mess-total-shared-cost', `${totalSharedCost.toFixed(2)} BDT`);
+  setText('mess-total-cost', `${totalCost.toFixed(2)} BDT`);
+  setText('mess-total-meals', String(totalMeals));
+  setText('mess-meal-rate', `${mealRate.toFixed(2)} BDT`);
+  setText('mess-remaining-balance', `${remaining.toFixed(2)} BDT`);
 }
 
 // Calculate meal rate for a specific date range
@@ -839,7 +1286,7 @@ function calculateMealRate(startDate, endDate) {
   
   // Update calculation results
   document.getElementById('calc-total-expenses').textContent = `${totalExpenses.toFixed(2)} BDT`;
-  document.getElementById('calc-total-meals').textContent = totalMeals;
+  document.getElementById('calc-total-meals').textContent = String(totalMeals);
   document.getElementById('calc-meal-rate').textContent = `${mealRate.toFixed(2)} BDT`;
   
   // Update member summary for this date range
@@ -854,7 +1301,7 @@ function updateMemberSummary(startDate = null, endDate = null) {
   const memberSummaryList = document.getElementById('member-summary-list');
   if (!memberSummaryList) return;
   
-  const members = JSON.parse(localStorage.getItem('members'));
+  const members = JSON.parse(localStorage.getItem(storageKey('members')) || '[]');
   const mealCounts = JSON.parse(localStorage.getItem('mealCounts'));
   const expenses = JSON.parse(localStorage.getItem('expenses'));
   
@@ -872,36 +1319,31 @@ function updateMemberSummary(startDate = null, endDate = null) {
     });
   }
   
-  // Calculate total expenses and meals
-  const totalExpenses = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const totalMeals = filteredMealCounts.reduce((sum, mealCount) => sum + mealCount.total, 0);
-  
-  // Calculate meal rate
-  let mealRate = 0;
-  if (totalMeals > 0) {
-    mealRate = totalExpenses / totalMeals;
-  }
-  
-  // Clear previous summary
+  const totalMealExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalMeals = filteredMealCounts.reduce((sum, m) => sum + m.total, 0);
+  const mealRate = totalMeals > 0 ? (totalMealExpenses / totalMeals) : 0;
+  const allShared = JSON.parse(localStorage.getItem('sharedExpenses') || '[]');
+  const totalSharedCost = allShared.reduce((sum, e) => sum + e.amount, 0);
+  const membersCount = members.length > 0 ? members.length : 1;
+  const perMemberShared = membersCount > 0 ? (totalSharedCost / membersCount) : 0;
+  const depositsKey = storageKey('deposits');
+  const allDeposits = JSON.parse(localStorage.getItem(depositsKey) || '[]');
   memberSummaryList.innerHTML = '';
-  
-  // Generate summary for each member
   members.forEach(member => {
     const memberMealCounts = filteredMealCounts.filter(mealCount => mealCount.memberId == member.id);
     const memberTotalMeals = memberMealCounts.reduce((sum, mealCount) => sum + mealCount.total, 0);
-    const memberTotalCost = memberTotalMeals * mealRate;
-    
-    // For simplicity, assume no payments yet
-    const paid = 0;
-    const balance = memberTotalCost - paid;
-    
+    const mealCost = memberTotalMeals * mealRate;
+    const depositSum = allDeposits.filter(d => d.memberId == member.id || d.memberEmail === member.email).reduce((s,d)=>s+(Number(d.amount)||0),0);
+    const totalIndCost = mealCost + perMemberShared;
+    const remaining = depositSum - totalIndCost;
     const row = document.createElement('tr');
     row.innerHTML = `
       <td>${member.name}</td>
-      <td>${memberTotalMeals}</td>
-      <td>${memberTotalCost.toFixed(2)} BDT</td>
-      <td>${paid.toFixed(2)} BDT</td>
-      <td>${balance.toFixed(2)} BDT</td>
+      <td>${depositSum.toFixed(2)} BDT</td>
+      <td>${mealCost.toFixed(2)} BDT</td>
+      <td>${perMemberShared.toFixed(2)} BDT</td>
+      <td>${totalIndCost.toFixed(2)} BDT</td>
+      <td>${remaining.toFixed(2)} BDT</td>
     `;
     memberSummaryList.appendChild(row);
   });
@@ -909,14 +1351,11 @@ function updateMemberSummary(startDate = null, endDate = null) {
 
 // Delete an expense
 function deleteExpense(id) {
-  const expenses = JSON.parse(localStorage.getItem('expenses'));
-  const updatedExpenses = expenses.filter(expense => expense.id != id);
-  localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
-  
+  removeById('expenses', id);
   updateExpenseList();
   updateExpenseSummary();
   updateMemberSummary();
-  updateMealPlannerSpentAmount(); // Update meal planner spent amount
+  updateMealPlannerSpentAmount();
 }
 
 // Delete a meal count
@@ -1040,7 +1479,7 @@ function calculatePerMealBudget() {
   const spent = parseFloat(spentAmount.textContent);
   
   // Get members count
-  const members = JSON.parse(localStorage.getItem('members') || '[]');
+  const members = JSON.parse(localStorage.getItem(storageKey('members')) || '[]');
   const membersCount = members.length > 0 ? members.length : 1; // Default to 1 if no members
   
   // Calculate days remaining in the month

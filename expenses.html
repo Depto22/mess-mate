@@ -91,7 +91,40 @@
         </form>
       </div>
     </div>
-    
+
+    <div class="card shared-expense-form">
+      <h2>Add Shared Cost</h2>
+      <form id="shared-expense-form">
+        <input type="date" id="shared-expense-date" required>
+        <input type="number" id="shared-expense-amount" placeholder="Amount (BDT)" required>
+        <input type="text" id="shared-expense-description" placeholder="Description (e.g., Electricity Bill)" required>
+        <select id="shared-expense-category">
+          <option value="electricity">Electricity</option>
+          <option value="gas">Gas</option>
+          <option value="wifi">Wi-Fi</option>
+          <option value="water">Water</option>
+          <option value="other">Other</option>
+        </select>
+        <button type="submit">Add Shared Cost</button>
+      </form>
+    </div>
+
+    <div class="card shared-expense-history">
+      <h2>Shared Cost History</h2>
+      <table id="shared-expense-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Amount</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="shared-expense-list"></tbody>
+      </table>
+    </div>
+
     <div class="card expense-history">
       <h2>Expense History</h2>
       <table id="expense-table">
@@ -161,10 +194,11 @@
         <thead>
           <tr>
             <th>Member</th>
-            <th>Total Meals</th>
+            <th>Deposits</th>
+            <th>Meal Cost</th>
+            <th>Shared Cost</th>
             <th>Total Cost</th>
-            <th>Paid</th>
-            <th>Balance</th>
+            <th>Remaining Balance</th>
           </tr>
         </thead>
         <tbody id="member-summary-list">
@@ -172,8 +206,21 @@
         </tbody>
       </table>
     </div>
+  <div class="card mess-cost-summary">
+    <h2>Mess Cost Summary</h2>
+    <table>
+      <tbody>
+        <tr><td>Total Meal Cost</td><td id="mess-total-meal-cost">0 BDT</td></tr>
+        <tr><td>Total Shared Cost</td><td id="mess-total-shared-cost">0 BDT</td></tr>
+        <tr><td>Total Cost</td><td id="mess-total-cost">0 BDT</td></tr>
+        <tr><td>Total Meal Count</td><td id="mess-total-meals">0</td></tr>
+        <tr><td>Current Meal Rate</td><td id="mess-meal-rate">0 BDT</td></tr>
+        <tr><td>Remaining Balance</td><td id="mess-remaining-balance">0 BDT</td></tr>
+      </tbody>
+    </table>
   </div>
-
+  </div>
+  
   <footer>
     <div class="footer-content">
       <div class="footer-section">
