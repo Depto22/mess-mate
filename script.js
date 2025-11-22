@@ -120,6 +120,7 @@ function getCurrentMess() { try { return JSON.parse(localStorage.getItem('curren
 function requireAuthAndMess() { const u = getCurrentUser(); const m = getCurrentMess(); if (!u || !m) { window.location.href = 'login.html'; return false; } return true; }
 function logout() { localStorage.removeItem('currentUser'); localStorage.removeItem('currentMess'); window.location.href = 'login.html'; }
 function storageKey(base) { const cm = getCurrentMess(); return cm ? `${base}:${cm.messId}` : base; }
+function isManagerRole() { const cm = getCurrentMess(); return cm && cm.role === 'manager'; }
 function getJSON(key, def) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : (def||null); } catch(_) { return def||null; } }
 function setJSON(key, obj) { localStorage.setItem(key, JSON.stringify(obj||[])); }
 function pushJSON(key, item) { var arr = getJSON(key, []); arr.push(item); setJSON(key, arr); return arr; }
@@ -750,11 +751,14 @@ function initDeposits() {
     localStorage.setItem(depositsKey, JSON.stringify([]));
   }
 
+  const currentMess = JSON.parse(localStorage.getItem('currentMess') || 'null');
+  const isManager = currentMess && currentMess.role === 'manager';
+
   // Populate member dropdown
   const memberSelect = document.getElementById('deposit-member');
   const members = JSON.parse(localStorage.getItem(storageKey('members')) || '[]');
   if (memberSelect) {
-    memberSelect.innerHTML = '<option value="">Select member</option>';
+    memberSelect.innerHTML = '<option value="Select member">Select member</option>';
     if (members.length === 0) {
       const opt = document.createElement('option');
       opt.value = '';
@@ -787,6 +791,7 @@ function initDeposits() {
   // Handle submit
   depositForm.addEventListener('submit', (e) => {
     e.preventDefault();
+    if (!isManager) { alert('Only the manager can add or edit deposits'); return; }
     const memberId = memberSelect ? memberSelect.value : '';
     const amount = parseFloat(document.getElementById('deposit-amount').value || '0');
     const date = (document.getElementById('deposit-date').value) || new Date().toISOString().split('T')[0];
@@ -950,6 +955,7 @@ function initExpenseTracker() {
   if (expenseForm) {
     expenseForm.addEventListener('submit', function(e) {
       e.preventDefault();
+      if (!isManagerRole()) { alert('Only the manager can add or edit bazar cost'); return; }
       
       const date = document.getElementById('expense-date').value;
       const amount = parseFloat(document.getElementById('expense-amount').value);
@@ -1003,21 +1009,52 @@ function initExpenseTracker() {
       
       const members = JSON.parse(localStorage.getItem(storageKey('members')) || '[]');
       const member = members.find(m => m.name === memberName);
+      const currentUser = getCurrentUser();
+      const isManager = isManagerRole();
+      if (!isManager) {
+        if (!currentUser || !member || String(member.email) !== String(currentUser.email)) {
+          alert('Members can only add their own meals');
+          return;
+        }
+      }
       
       const mealCount = {
         id: Date.now(),
         date,
         memberId: member ? member.id : null,
         memberName: memberName,
+        memberEmail: member ? member.email : undefined,
         breakfast,
         lunch,
         dinner,
         total: breakfast + lunch + dinner
       };
       
-      // Save meal count
+      // Save or update meal count
       const mealCounts = JSON.parse(localStorage.getItem('mealCounts'));
-      mealCounts.push(mealCount);
+      const editingId = mealCountForm.dataset.editingId || null;
+      if (editingId) {
+        if (!isManager) { alert('Only the manager can edit meals'); return; }
+        const idx = mealCounts.findIndex(mc => String(mc.id) === String(editingId));
+        if (idx !== -1) {
+          mealCounts[idx] = {
+            ...mealCounts[idx],
+            date,
+            memberId: member ? member.id : null,
+            memberName: memberName,
+            memberEmail: member ? member.email : mealCounts[idx].memberEmail,
+            breakfast,
+            lunch,
+            dinner,
+            total: breakfast + lunch + dinner
+          };
+        }
+        delete mealCountForm.dataset.editingId;
+        const submitBtn = mealCountForm.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.textContent = 'Add Meal Count';
+      } else {
+        mealCounts.push(mealCount);
+      }
       localStorage.setItem('mealCounts', JSON.stringify(mealCounts));
       
       // Update UI
@@ -1034,6 +1071,7 @@ function initExpenseTracker() {
   if (sharedForm) {
     sharedForm.addEventListener('submit', function(e) {
       e.preventDefault();
+      if (!isManagerRole()) { alert('Only the manager can add or edit shared cost'); return; }
       const date = document.getElementById('shared-expense-date').value;
       const amount = parseFloat(document.getElementById('shared-expense-amount').value);
       const description = document.getElementById('shared-expense-description').value;
@@ -1124,6 +1162,7 @@ function updateSharedExpenseList() {
 }
 
 function deleteSharedExpense(id) {
+  if (!isManagerRole()) { alert('Only the manager can delete shared cost'); return; }
   removeById('sharedExpenses', id);
   updateSharedExpenseList();
   updateExpenseSummary();
@@ -1133,6 +1172,7 @@ function deleteSharedExpense(id) {
 
 // Update meal count list in the UI
 function startEditExpense(id) {
+  if (!isManagerRole()) { alert('Only the manager can edit bazar cost'); return; }
   const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
   const exp = expenses.find(e => String(e.id) === String(id));
   const form = document.getElementById('expense-form');
@@ -1152,6 +1192,7 @@ function startEditExpense(id) {
 }
 
 function startEditSharedExpense(id) {
+  if (!isManagerRole()) { alert('Only the manager can edit shared cost'); return; }
   const shared = JSON.parse(localStorage.getItem('sharedExpenses') || '[]');
   const item = shared.find(e => String(e.id) === String(id));
   const form = document.getElementById('shared-expense-form');
@@ -1187,6 +1228,7 @@ function updateMealCountList() {
       <td>${mealCount.dinner}</td>
       <td>${mealCount.total}</td>
       <td>
+        <button class="edit-btn" data-id="${mealCount.id}">Edit</button>
         <button class="delete-btn" data-id="${mealCount.id}">Delete</button>
       </td>
     `;
@@ -1198,6 +1240,13 @@ function updateMealCountList() {
     btn.addEventListener('click', function() {
       const id = this.getAttribute('data-id');
       deleteMealCount(id);
+    });
+  });
+  // Add edit functionality
+  document.querySelectorAll('#meal-count-list .edit-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const id = this.getAttribute('data-id');
+      startEditMealCount(id);
     });
   });
 }
@@ -1351,6 +1400,7 @@ function updateMemberSummary(startDate = null, endDate = null) {
 
 // Delete an expense
 function deleteExpense(id) {
+  if (!isManagerRole()) { alert('Only the manager can delete bazar cost'); return; }
   removeById('expenses', id);
   updateExpenseList();
   updateExpenseSummary();
@@ -1360,6 +1410,7 @@ function deleteExpense(id) {
 
 // Delete a meal count
 function deleteMealCount(id) {
+  if (!isManagerRole()) { alert('Only the manager can delete meals'); return; }
   const mealCounts = JSON.parse(localStorage.getItem('mealCounts'));
   const updatedMealCounts = mealCounts.filter(mealCount => mealCount.id != id);
   localStorage.setItem('mealCounts', JSON.stringify(updatedMealCounts));
@@ -1368,6 +1419,40 @@ function deleteMealCount(id) {
   updateExpenseSummary();
   updateMemberSummary();
   updateMealPlannerSpentAmount(); // Update meal planner spent amount
+}
+
+function startEditMealCount(id) {
+  if (!isManagerRole()) { alert('Only the manager can edit meals'); return; }
+  const mealCounts = JSON.parse(localStorage.getItem('mealCounts')) || [];
+  const mc = mealCounts.find(m => String(m.id) === String(id));
+  const form = document.getElementById('meal-count-form');
+  if (!mc || !form) return;
+  const dateEl = document.getElementById('meal-date');
+  const memberSelect = document.getElementById('member-select');
+  const breakfastEl = document.getElementById('breakfast');
+  const lunchEl = document.getElementById('lunch');
+  const dinnerEl = document.getElementById('dinner');
+
+  if (dateEl) dateEl.value = mc.date;
+  if (memberSelect) {
+    let exists = false;
+    Array.from(memberSelect.options).forEach(opt => { if (opt.value === mc.memberName) exists = true; });
+    if (!exists) {
+      const opt = document.createElement('option');
+      opt.value = mc.memberName;
+      opt.textContent = mc.memberName;
+      memberSelect.appendChild(opt);
+    }
+    memberSelect.value = mc.memberName;
+  }
+  if (breakfastEl) breakfastEl.value = mc.breakfast;
+  if (lunchEl) lunchEl.value = mc.lunch;
+  if (dinnerEl) dinnerEl.value = mc.dinner;
+
+  form.dataset.editingId = String(mc.id);
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if (submitBtn) submitBtn.textContent = 'Update Meal Count';
+  if (breakfastEl) breakfastEl.focus();
 }
 
 // Format date for display
@@ -1644,6 +1729,7 @@ function initReviews() {
   const uniInput = document.getElementById('review-university');
   const timeInput = document.getElementById('review-time');
   const textInput = document.getElementById('review-text');
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
 
   if (timeInput) {
     timeInput.value = formatDateTime(new Date());
@@ -1664,6 +1750,11 @@ function initReviews() {
       if (editingId) {
         const idx = reviews.findIndex(r => String(r.id) === String(editingId));
         if (idx !== -1) {
+          const review = reviews[idx];
+          if (!currentUser || !review.authorEmail || String(review.authorEmail) !== String(currentUser.email)) {
+            alert('You can only edit your own review.');
+            return;
+          }
           reviews[idx].name = nameInput.value;
           reviews[idx].university = uniInput.value;
           reviews[idx].text = textInput.value;
@@ -1678,7 +1769,8 @@ function initReviews() {
           name: nameInput.value,
           university: uniInput.value,
           text: textInput.value,
-          createdAt: nowISO
+          createdAt: nowISO,
+          authorEmail: currentUser ? currentUser.email : undefined
         });
       }
 
@@ -1696,6 +1788,7 @@ function updateReviewsDisplay() {
   const list = document.getElementById('reviews-list');
   if (!list) return;
   const reviews = JSON.parse(localStorage.getItem('reviews') || '[]');
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
 
   reviews.sort((a, b) => {
     const ta = a.updatedAt || a.createdAt;
@@ -1712,7 +1805,9 @@ function updateReviewsDisplay() {
   reviews.forEach(r => {
     const timeStr = formatDateTime(new Date(r.updatedAt || r.createdAt));
     const item = document.createElement('div');
-    item.className = 'review-item';
+    
+    const isOwner = currentUser && r.authorEmail && String(r.authorEmail) === String(currentUser.email);
+    item.className = 'review-item' + (isOwner ? ' own-review' : '');
     item.innerHTML = `
       <div class="review-header">
         <strong>${escapeHtml(r.name)}</strong> • <span>${escapeHtml(r.university)}</span>
@@ -1720,8 +1815,8 @@ function updateReviewsDisplay() {
       </div>
       <p class="review-text">${escapeHtml(r.text)}</p>
       <div class="review-actions">
-        <button class="edit-review" data-id="${r.id}">Edit</button>
-        <button class="delete-review" data-id="${r.id}">Delete</button>
+        ${isOwner ? `<button class="edit-review" data-id="${r.id}">Edit</button>` : ''}
+        ${isOwner ? `<button class="delete-review" data-id="${r.id}">Delete</button>` : ''}
       </div>
     `;
     list.appendChild(item);
@@ -1747,6 +1842,11 @@ function startEditReview(id) {
   const r = reviews.find(x => String(x.id) === String(id));
   const form = document.getElementById('review-form');
   if (!r || !form) return;
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+  if (!currentUser || !r.authorEmail || String(r.authorEmail) !== String(currentUser.email)) {
+    alert('You can only edit your own review.');
+    return;
+  }
 
   const nameInput = document.getElementById('review-name');
   const uniInput = document.getElementById('review-university');
@@ -1765,6 +1865,13 @@ function startEditReview(id) {
 
 function deleteReview(id) {
   const reviews = JSON.parse(localStorage.getItem('reviews') || '[]');
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+  const target = reviews.find(r => String(r.id) === String(id));
+  if (!target) return;
+  if (!currentUser || !target.authorEmail || String(target.authorEmail) !== String(currentUser.email)) {
+    alert('You can only delete your own review.');
+    return;
+  }
   const updated = reviews.filter(r => String(r.id) !== String(id));
   localStorage.setItem('reviews', JSON.stringify(updated));
   updateReviewsDisplay();

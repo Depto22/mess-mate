@@ -218,6 +218,14 @@ footer {
   padding: var(--spacing-md);
   margin-bottom: var(--spacing-sm);
 }
+#reviews .review-item.own-review {
+  border-left: 4px solid var(--primary-color);
+  box-shadow: inset 0 0 0 2px rgba(255,138,0,0.15);
+  background: linear-gradient(135deg, rgba(255,138,0,0.18), rgba(229,46,113,0.18));
+}
+#reviews .review-item.own-review .review-header strong {
+  color: var(--primary-color);
+}
 #reviews .review-header {
   display: flex;
   align-items: center;
